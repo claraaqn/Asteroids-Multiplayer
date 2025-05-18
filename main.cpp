@@ -2,6 +2,7 @@
 #include <vector>
 #include <cmath>
 
+
 const int WIDTH = 800;
 const int HEIGHT = 600;
 const float PI = 3.14159265f;
@@ -11,7 +12,7 @@ public:
     sf::ConvexShape shape;
     sf::Vector2f position;
     float angle;
-    float speed;
+    sf::Vector2f velocity;
     bool isAlive;
     sf::Clock fireCooldown;
     bool isPlayer1; // Para identificar qual jogador é
@@ -19,25 +20,47 @@ public:
     Spaceship(sf::Vector2f startPos, float startAngle, bool player1) {
         position = startPos;
         angle = startAngle;
-        speed = 0;
+        velocity = sf::Vector2f(0, 0);
         isAlive = true;
         isPlayer1 = player1;
 
-        shape.setPointCount(3);
-        shape.setPoint(0, sf::Vector2f(20, 0));
-        shape.setPoint(1, sf::Vector2f(-10, -10));
-        shape.setPoint(2, sf::Vector2f(-10, 10));
+        shape.setPointCount(7);
+
+        shape.setPoint(0, sf::Vector2f(15, 0));    // Ponta da nave
+        shape.setPoint(1, sf::Vector2f(-10, -10)); // Asa superior traseira
+        shape.setPoint(2, sf::Vector2f(-5, -5));   // Curva superior
+        shape.setPoint(3, sf::Vector2f(-10, 0));   // Centro traseiro
+        shape.setPoint(4, sf::Vector2f(-5, 5));    // Curva inferior
+        shape.setPoint(5, sf::Vector2f(-10, 10));  // Asa inferior traseira
+        shape.setPoint(6, sf::Vector2f(15, 0));    // Fecha o polígono
+
         shape.setFillColor(sf::Color::Transparent);
         shape.setOutlineThickness(2);
         shape.setPosition(position);
         shape.setRotation(angle);
+        float sumX = 0;
+        float sumY = 0;
+        int count = shape.getPointCount();
+
+        for (int i = 0; i < count; i++) {
+            sf::Vector2f p = shape.getPoint(i);
+            sumX += p.x;
+            sumY += p.y;
+        }
+
+        float centerX = sumX / count;
+        float centerY = sumY / count;
+
+        shape.setOrigin(centerX, centerY);
+
     }
 
     void update() {
         if (!isAlive) return;
 
         // Movimento apenas horizontal
-        position.x += speed;
+        position.x += velocity.x;
+        position.y += velocity.y;
 
         // Limites da tela para cada jogador
         if (isPlayer1) {
@@ -49,22 +72,37 @@ public:
         }
 
         // Mantém a nave na parte inferior da tela
-        if (position.y < HEIGHT - 50) position.y = HEIGHT - 50;
-        if (position.y > HEIGHT - 30) position.y = HEIGHT - 30;
+        if (position.y < 0) position.y = 0;
+        if (position.y > HEIGHT) position.y = HEIGHT;
 
         shape.setPosition(position);
         shape.setRotation(angle);
     }
 
     void accelerate(float amount) {
-        speed += amount;
-        if (speed > 5) speed = 5;
-        if (speed < -5) speed = -5;
+        // Conversão de ângulo para vetor de aceleração
+        float rad = (angle - 90) * PI / 180;
+        sf::Vector2f acceleration(
+            amount * std::cos(rad),
+            amount * std::sin(rad)
+        );
+        
+        velocity += acceleration;
+        
+        // Limite de velocidade
+        float speed = std::sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
+        if (speed > 5.0f) {
+            velocity = (velocity / speed) * 5.0f;
+        }
     }
 
-    void decelerate() {
-        speed *= 0.98f;
-        if (std::abs(speed) < 0.01f) speed = 0;
+     void decelerate() {
+        velocity *= 0.98f;  // Desaceleração suave
+        
+        // Parada completa quando muito lento
+        if (std::abs(velocity.x) < 0.01f && std::abs(velocity.y) < 0.01f) {
+            velocity = sf::Vector2f(0, 0);
+        }
     }
 
     sf::Vector2f getFirePosition() {
@@ -94,6 +132,8 @@ public:
         shape.setRadius(3);
         shape.setFillColor(sf::Color::White);
         isActive = false;
+        shape.setOrigin(0, 0); // Substituir por uma origem melhor
+
     }
 
     void fire(sf::Vector2f pos, float angle) {
@@ -175,6 +215,15 @@ int main() {
     std::vector<Bullet> bullets1(10);
     std::vector<Bullet> bullets2(10);
 
+    for (auto& bullet : bullets1) {
+        bullet.shape.setFillColor(sf::Color::Green);
+    }
+
+    // Balas do jogador 2 (ciano)
+    for (auto& bullet : bullets2) {
+        bullet.shape.setFillColor(sf::Color::Cyan);
+    }
+
     // Asteroides
     std::vector<Asteroid> asteroids;
     for (int i = 0; i < 5; ++i) {
@@ -207,45 +256,77 @@ int main() {
     int score2 = 0;
 
     while (window.isOpen()) {
-        sf::Event event;
-        while (window.pollEvent(event)) {
-            if (event.type == sf::Event::Closed)
-                window.close();
+    sf::Event event;
+    while (window.pollEvent(event)) {
+        if (event.type == sf::Event::Closed)
+            window.close();
+
+        // Sistema de tiro por evento (melhor para tiros únicos)
+        if (event.type == sf::Event::KeyPressed) {
+            // Jogador 1 - ESPAÇO
+            
+            if (event.key.code == sf::Keyboard::Space && player1.canFire() && player1.isAlive) {
+                for (auto& bullet : bullets1) {
+                    if (!bullet.isActive) {
+                        bullet.fire(player1.getFirePosition(), player1.angle);
+                        player1.resetFireCooldown();
+                        break;
+                    }
+
+                }
+            }
+            // Jogador 2 - ENTER (ou use sf::Keyboard::Return)
+        if ((event.key.code == sf::Keyboard::Enter || event.key.code == sf::Keyboard::Return) && 
+            player2.canFire() && player2.isAlive){                
+                for (auto& bullet : bullets2) {
+                    if (!bullet.isActive) {
+                        bullet.fire(player2.getFirePosition(), player2.angle);
+                        player2.resetFireCooldown();
+                        break;
+                    }
+                }
+            }
         }
+    }
+    for (const auto& bullet : bullets1) {
+    if (bullet.isActive)
+        window.draw(bullet.shape);
+    }
+    for (const auto& bullet : bullets2) {
+        if (bullet.isActive)
+            window.draw(bullet.shape);
+    }
+
+
 
         // Controles do Jogador 1 (A/D para esquerda/direita, W para atirar)
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) {
-            player1.accelerate(-0.2f);
-        }
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) {
-            player1.accelerate(0.2f);
-        }
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::W) && player1.canFire() && player1.isAlive) {
-            for (auto& bullet : bullets1) {
-                if (!bullet.isActive) {
-                    bullet.fire(player1.getFirePosition(), player1.angle);
-                    player1.resetFireCooldown();
-                    break;
-                }
-            }
-        }
+        // Controles do Jogador 1 (WASD)
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) {
+        player1.angle -= 3.0f;  // Gira para esquerda
+    }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) {
+        player1.angle += 3.0f;  // Gira para direita
+    }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::W)) {
+        player1.accelerate(0.1f);  // Acelera na direção atual
+    }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) {
+        player1.accelerate(-0.05f);  // Freio/reverso
+    }
 
-        // Controles do Jogador 2 (setas esquerda/direita para mover, seta para cima para atirar)
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) {
-            player2.accelerate(-0.2f);
-        }
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) {
-            player2.accelerate(0.2f);
-        }
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up) && player2.canFire() && player2.isAlive) {
-            for (auto& bullet : bullets2) {
-                if (!bullet.isActive) {
-                    bullet.fire(player2.getFirePosition(), player2.angle);
-                    player2.resetFireCooldown();
-                    break;
-                }
-            }
-        }
+    // Controles do Jogador 2 (Setas)
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) {
+        player2.angle -= 3.0f;
+    }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) {
+        player2.angle += 3.0f;
+    }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up)) {
+        player2.accelerate(0.1f);
+    }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down)) {
+        player2.accelerate(-0.05f);
+    }
 
         // Desaceleração
         player1.decelerate();
@@ -382,6 +463,10 @@ int main() {
         for (const auto& bullet : bullets2) {
             if (bullet.isActive) window.draw(bullet.shape);
         }
+
+        scoreText1.setString("P1: " + std::to_string(score1));
+        scoreText2.setString("P2: " + std::to_string(score2));
+
 
         window.draw(scoreText1);
         window.draw(scoreText2);

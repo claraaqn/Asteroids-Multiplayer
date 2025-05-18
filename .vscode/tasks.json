@@ -5,15 +5,21 @@
             "label": "C/C++: gcc.exe build active file",
             "command": "C:\\msys64\\ucrt64\\bin\\gcc.exe",
             "args": [
-                "-fdiagnostics-color=always",
-                "-g",
+                 "-std=c++17",
                 "${file}",
                 "-o",
-                "${fileDirname}\\${fileBasenameNoExtension}.exe"
+                "${fileDirname}/${fileBasenameNoExtension}",
+                "-I/path/to/SFML/include",
+                "-L/path/to/SFML/lib",
+                "-lsfml-graphics",
+                "-lsfml-window",
+                "-lsfml-system",
+                "-lsfml-audio"
             ],
             "options": {
                 "cwd": "C:\\msys64\\ucrt64\\bin"
             },
+            
             "problemMatcher": [
                 "$gcc"
             ],
