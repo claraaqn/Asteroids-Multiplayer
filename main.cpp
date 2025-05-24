@@ -147,11 +147,20 @@ public:
     void update() {
         if (!isActive) return;
 
+        sf::Vector2f previousPosition = shape.getPosition();
         shape.move(velocity);
+        sf::Vector2f currentPosition = shape.getPosition();
 
         // Verifica se saiu da tela
-        if (shape.getPosition().x < 0 || shape.getPosition().x > WIDTH ||
-            shape.getPosition().y < 0 || shape.getPosition().y > HEIGHT) {
+        if (currentPosition.x < 0 || currentPosition.x > WIDTH ||
+            currentPosition.y < 0 || currentPosition.y > HEIGHT) {
+            isActive = false;
+            return;
+        }
+
+        // Verifica se cruzou a linha divisória (só verifica se houve mudança de lado)
+        if ((previousPosition.x < WIDTH/2 && currentPosition.x >= WIDTH/2) || 
+            (previousPosition.x >= WIDTH/2 && currentPosition.x < WIDTH/2)) {
             isActive = false;
         }
     }
@@ -159,14 +168,17 @@ public:
 
 class Asteroid {
 public:
-    sf::CircleShape shape;
-    sf::Vector2f velocity;
-    int size; // 3 = grande, 2 = médio, 1 = pequeno
+    sf::CircleShape shape; //? aparência visual do asteroide
+    sf::Vector2f velocity; //? velocidade do asteroide (direção e magnitude)
+    int size; //? 3 = grande, 2 = médio, 1 = pequeno
 
-    Asteroid(sf::Vector2f pos, sf::Vector2f vel, int sz) {
-        position = pos;
-        velocity = vel;
-        size = sz;
+    Asteroid(sf::Vector2f pos, sf::Vector2f vel, int sz) { //! isso é um construtor 
+
+        position = sf::Vector2f(pos.x, -50); //! garante que o asteroid vem verticalmente 
+
+        velocity = sf::Vector2f(0, vel.y); 
+
+        size = sz; //? tamanho 
 
         shape.setRadius(size * 15);
         shape.setPointCount(size * 6 + 6);
@@ -176,14 +188,13 @@ public:
         shape.setPosition(position);
     }
 
-    void update() {
+    void update() { //! atualiza a posição do asteroid a cada frame
         position += velocity;
         
-        // Limites da tela
-        if (position.x < -50) position.x = WIDTH + 50;
-        if (position.x > WIDTH + 50) position.x = -50;
-        if (position.y < -50) position.y = HEIGHT + 50;
-        if (position.y > HEIGHT + 50) position.y = -50;
+        if (position.y > HEIGHT + 50) {
+            position.y = -50;
+            position.x = rand() % WIDTH;
+        }
 
         shape.setPosition(position);
     }
@@ -224,14 +235,20 @@ int main() {
         bullet.shape.setFillColor(sf::Color::Cyan);
     }
 
-    // Asteroides
+    //! são os asteroids iniciais - assim que o jogo começa
     std::vector<Asteroid> asteroids;
     for (int i = 0; i < 5; ++i) {
-        float x = rand() % WIDTH;
-        float y = rand() % (HEIGHT - 100); // Não spawnar muito perto das naves
-        float vx = (rand() % 100) / 50.0f - 1.0f;
-        float vy = (rand() % 100) / 50.0f - 1.0f;
-        asteroids.emplace_back(sf::Vector2f(x, y), sf::Vector2f(vx, vy), 3);
+        float x = rand() % WIDTH; // Posição X aleatória na largura da tela
+        float y = -50.0f; // Spawna acima da tela (fora da visão)
+
+        // Tamanho aleatório (3-grande, 2-médio, 1-pequeno)
+        int size = 1 + (rand() % 3); // 1, 2 ou 3
+        
+        // Velocidade controlada (só para baixo, com variação)
+        float vx = 0.0f; // Sem movimento horizontal
+        float vy = ((rand() % 100) + (size * 10.0f)) / (40.0f); //! quanto maior + rápido
+        
+        asteroids.emplace_back(sf::Vector2f(x, y), sf::Vector2f(vx, vy), size);
     }
 
     sf::Clock asteroidClock;
@@ -340,19 +357,19 @@ int main() {
         for (auto& bullet : bullets2) bullet.update();
         for (auto& asteroid : asteroids) asteroid.update();
 
-        // Spawn de novos asteroides
-        if (asteroidClock.getElapsedTime().asSeconds() > 5.0f && asteroids.size() < 10) {
-            int side = rand() % 4;
-            sf::Vector2f pos;
-            if (side == 0) pos = sf::Vector2f(-50, rand() % (HEIGHT - 100));
-            else if (side == 1) pos = sf::Vector2f(WIDTH + 50, rand() % (HEIGHT - 100));
-            else if (side == 2) pos = sf::Vector2f(rand() % WIDTH, -50);
-            else pos = sf::Vector2f(rand() % WIDTH, HEIGHT + 50);
+        //! Spawn de novos asteroides - novos asteroids 
+        if (asteroidClock.getElapsedTime().asSeconds() > 2.0f) {  // Ajuste o tempo para mais/ menos asteroides
+            float x = rand() % WIDTH;      // Posição X aleatória
+            float y = -50.0f;              // Sempre spawna de cima
 
-            float vx = (rand() % 100) / 50.0f - 1.0f;
-            float vy = (rand() % 100) / 50.0f - 1.0f;
-            asteroids.emplace_back(pos, sf::Vector2f(vx, vy), 3);
-            asteroidClock.restart();
+            // Tamanho aleatório (1-pequeno, 2-médio, 3-grande)
+            int size = 1 + (rand() % 3);  
+
+            // Velocidade: Quanto maior o asteroide, mais rápido
+            float vy = 1.0f + (size * 0.5f) + (rand() % 20) / 20.0f;  
+
+            asteroids.emplace_back(sf::Vector2f(x, y), sf::Vector2f(0.0f, vy), size);
+            asteroidClock.restart();  // Reinicia o timer
         }
 
         // Colisão bala-asteroide
