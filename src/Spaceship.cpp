@@ -91,7 +91,7 @@ if (std::abs(velocity.x) < 0.01f && std::abs(velocity.y) < 0.01f) {
 }
 }
 
-sf::Vector2f getFirePosition() {
+sf::Vector2f Spaceship::getFirePosition() const {
     float rad = (angle - 90) * PI / 180;
     return sf::Vector2f(
         position.x + 25 * std::cos(rad),
@@ -99,10 +99,10 @@ sf::Vector2f getFirePosition() {
     );
 }
 
-bool Spaceship::canFire() {
+bool Spaceship::canFire  () const {
     return fireCooldown.getElapsedTime().asMilliseconds() > 300;
 }
 
-void Spaceship::resetFireCooldown() {
+void Spaceship::resetFireCooldown()  {
     fireCooldown.restart();
 }
