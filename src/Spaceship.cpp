@@ -5,20 +5,20 @@ using namespace GameConstants;
 
 Spaceship::Spaceship(sf::Vector2f startPos, float startAngle, bool player1) {
     position = startPos;
-    angle = startAngle;
+    angle = 0.0f;
     velocity = sf::Vector2f(0, 0);
     isAlive = true;
     isPlayer1 = player1;
 
     shape.setPointCount(7);
 
-    shape.setPoint(0, sf::Vector2f(15, 0));    // Ponta da nave
-    shape.setPoint(1, sf::Vector2f(-10, -10)); // Asa superior traseira
-    shape.setPoint(2, sf::Vector2f(-5, -5));   // Curva superior
-    shape.setPoint(3, sf::Vector2f(-10, 0));   // Centro traseiro
-    shape.setPoint(4, sf::Vector2f(-5, 5));    // Curva inferior
-    shape.setPoint(5, sf::Vector2f(-10, 10));  // Asa inferior traseira
-    shape.setPoint(6, sf::Vector2f(15, 0));    // Fecha o polígono
+    shape.setPoint(0, sf::Vector2f(0, -15));    // Ponta da nave (agora para cima)
+    shape.setPoint(1, sf::Vector2f(-10, 10));   // Asa inferior traseira
+    shape.setPoint(2, sf::Vector2f(-5, 5));     // Curva inferior
+    shape.setPoint(3, sf::Vector2f(0, 10));     // Centro traseiro
+    shape.setPoint(4, sf::Vector2f(5, 5));      // Curva superior
+    shape.setPoint(5, sf::Vector2f(10, 10));    // Asa superior traseira
+    shape.setPoint(6, sf::Vector2f(0, -15));    // Fecha o polígono
 
     shape.setFillColor(sf::Color::Transparent);
     shape.setOutlineThickness(2);
@@ -67,7 +67,7 @@ void Spaceship::update() {
 
 void Spaceship::accelerate(float amount) {
     // Conversão de ângulo para vetor de aceleração
-    float rad = (angle - 90) * PI / 180;
+float rad = (shape.getRotation() - 90.0f) * PI / 180.0f;
     sf::Vector2f acceleration(
         amount * std::cos(rad),
         amount * std::sin(rad)
@@ -92,11 +92,13 @@ if (std::abs(velocity.x) < 0.01f && std::abs(velocity.y) < 0.01f) {
 }
 
 sf::Vector2f Spaceship::getFirePosition() const {
-    float rad = (angle - 90) * PI / 180;
+float rad = (shape.getRotation() - 90.0f) * PI / 180.0f;
+
     return sf::Vector2f(
         position.x + 25 * std::cos(rad),
         position.y + 25 * std::sin(rad)
     );
+
 }
 
 bool Spaceship::canFire  () const {
