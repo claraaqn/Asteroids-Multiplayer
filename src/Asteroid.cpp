@@ -2,8 +2,6 @@
 #include "GameConstants.h"
 
 using namespace GameConstants;
-
-
 Asteroid::Asteroid(sf::Vector2f pos, sf::Vector2f vel, int sz) { //! isso é um construtor 
 
     position = sf::Vector2f(pos.x, -50); //! garante que o asteroid vem verticalmente 
@@ -33,4 +31,3 @@ void Asteroid::update() { //! atualiza a posição do asteroid a cada frame
 
 sf::Vector2f Asteroid::getPosition() const { return position; }
 float Asteroid::getRadius() const { return size * 15; }
-

@@ -4,6 +4,7 @@
 
 using namespace GameConstants;
 
+
 Bullet::Bullet() {
     shape.setRadius(3);
     shape.setFillColor(sf::Color::White);
@@ -23,11 +24,21 @@ void Bullet::fire(sf::Vector2f pos, float angle) {
 void Bullet::update() {
     if (!isActive) return;
 
+    sf::Vector2f previousPosition = shape.getPosition();
     shape.move(velocity);
+    sf::Vector2f currentPosition = shape.getPosition();
 
     // Verifica se saiu da tela
-    if (shape.getPosition().x < 0 || shape.getPosition().x > WIDTH ||
-        shape.getPosition().y < 0 || shape.getPosition().y > HEIGHT) {
+    if (currentPosition.x < 0 || currentPosition.x > WIDTH ||
+        currentPosition.y < 0 || currentPosition.y > HEIGHT) {
+        isActive = false;
+        return;
+    }
+
+    // Verifica se cruzou a linha divisória (só verifica se houve mudança de lado)
+    if ((previousPosition.x < WIDTH/2 && currentPosition.x >= WIDTH/2) || 
+        (previousPosition.x >= WIDTH/2 && currentPosition.x < WIDTH/2)) {
         isActive = false;
     }
 }
+
