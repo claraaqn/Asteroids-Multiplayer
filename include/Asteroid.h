@@ -3,7 +3,7 @@
 
 class Asteroid {
 public:
-    sf::CircleShape shape;
+    sf::ConvexShape shape;
     sf::Vector2f velocity;
     int size;
 
@@ -14,4 +14,5 @@ public:
 
 private:
     sf::Vector2f position;
+    float radius;
 };
