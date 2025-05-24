@@ -1,9 +1,8 @@
 #include "Spaceship.h" // Inclui a DECLARAÇÃO da classe Spaceship
 #include <cmath> // Para std::cos, std::sin
 
-using namespace GameConstants; // Para usar PI, WIDTH, HEIGHT diretamente
+using namespace GameConstants;
 
-// Definição do construtor
 Spaceship::Spaceship(sf::Vector2f startPos, float startAngle, bool player1) {
     position = startPos;
     angle = startAngle;
@@ -25,7 +24,6 @@ Spaceship::Spaceship(sf::Vector2f startPos, float startAngle, bool player1) {
     shape.setOutlineThickness(2);
     shape.setPosition(position);
     shape.setRotation(angle);
-
     float sumX = 0;
     float sumY = 0;
     int count = shape.getPointCount();
@@ -40,13 +38,17 @@ Spaceship::Spaceship(sf::Vector2f startPos, float startAngle, bool player1) {
     float centerY = sumY / count;
 
     shape.setOrigin(centerX, centerY);
+
 }
 
 void Spaceship::update() {
     if (!isAlive) return;
 
-    position += velocity;
+    // Movimento apenas horizontal
+    position.x += velocity.x;
+    position.y += velocity.y;
 
+    // Limites da tela para cada jogador
     if (isPlayer1) {
         if (position.x < 0) position.x = 0;
         if (position.x > WIDTH/2) position.x = WIDTH/2;
@@ -55,6 +57,7 @@ void Spaceship::update() {
         if (position.x > WIDTH) position.x = WIDTH;
     }
 
+    // Mantém a nave na parte inferior da tela
     if (position.y < 0) position.y = 0;
     if (position.y > HEIGHT) position.y = HEIGHT;
 
@@ -63,29 +66,32 @@ void Spaceship::update() {
 }
 
 void Spaceship::accelerate(float amount) {
+    // Conversão de ângulo para vetor de aceleração
     float rad = (angle - 90) * PI / 180;
     sf::Vector2f acceleration(
         amount * std::cos(rad),
         amount * std::sin(rad)
     );
-
+    
     velocity += acceleration;
-
+    
+    // Limite de velocidade
     float speed = std::sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
-    if (speed > 5.0f) { 
+    if (speed > 5.0f) {
         velocity = (velocity / speed) * 5.0f;
     }
 }
 
 void Spaceship::decelerate() {
-    velocity *= 0.98f; 
+velocity *= 0.98f;  // Desaceleração suave
 
-    if (std::abs(velocity.x) < 0.01f && std::abs(velocity.y) < 0.01f) {
-        velocity = sf::Vector2f(0, 0);
-    }
+// Parada completa quando muito lento
+if (std::abs(velocity.x) < 0.01f && std::abs(velocity.y) < 0.01f) {
+    velocity = sf::Vector2f(0, 0);
+}
 }
 
-sf::Vector2f Spaceship::getFirePosition() const { 
+sf::Vector2f getFirePosition() {
     float rad = (angle - 90) * PI / 180;
     return sf::Vector2f(
         position.x + 25 * std::cos(rad),
@@ -93,7 +99,7 @@ sf::Vector2f Spaceship::getFirePosition() const {
     );
 }
 
-bool Spaceship::canFire() const { 
+bool Spaceship::canFire() {
     return fireCooldown.getElapsedTime().asMilliseconds() > 300;
 }
 
