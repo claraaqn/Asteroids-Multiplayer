@@ -15,7 +15,7 @@ bool Game::isGameOver() const {
 }
 
 void Game::checkGameOver(bool player1Alive, bool player2Alive) {
-    if (!player1Alive && !player2Alive && currentState == PLAYING) {
+    if ((!player1Alive || !player2Alive) && currentState == PLAYING) {
         currentState = GAME_OVER;
     }
 }
