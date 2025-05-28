@@ -13,16 +13,62 @@
 
 using namespace GameConstants; 
 
+
+// Adicione esta função ANTES de int main() { ... } em src/main.cpp
+void resizeView(sf::RenderWindow& window, sf::View& view, int originalWidth, int originalHeight) {
+    float windowWidth = static_cast<float>(window.getSize().x);
+    float windowHeight = static_cast<float>(window.getSize().y);
+
+    // Calcula a relação de aspecto do jogo original
+    float gameAspectRatio = static_cast<float>(originalWidth) / originalHeight;
+    // Calcula a relação de aspecto da janela atual
+    float windowAspectRatio = windowWidth / windowHeight;
+
+    float scaleX = 1.0f;
+    float scaleY = 1.0f;
+    float viewportX = 0.0f;
+    float viewportY = 0.0f;
+
+    if (windowAspectRatio > gameAspectRatio) {
+        // Janela é mais larga que o jogo (ex: monitor 16:9 vs jogo 4:3)
+        // Ocupa toda a altura, adiciona barras pretas nas laterais (pillarboxing)
+        scaleY = 1.0f; // View ocupa 100% da altura do viewport
+        scaleX = gameAspectRatio / windowAspectRatio; // Calcula a escala horizontal
+        viewportX = (1.0f - scaleX) / 2.0f; // Centraliza horizontalmente
+        viewportY = 0.0f;
+    } else {
+        // Janela é mais alta que o jogo (ex: monitor 4:3 vs jogo 16:9)
+        // Ocupa toda a largura, adiciona barras pretas em cima/embaixo (letterboxing)
+        scaleX = 1.0f; // View ocupa 100% da largura do viewport
+        scaleY = windowAspectRatio / gameAspectRatio; // Calcula a escala vertical
+        viewportY = (1.0f - scaleY) / 2.0f; // Centraliza verticalmente
+        viewportX = 0.0f;
+    }
+
+    // Aplica o viewport calculado à view
+    view.setViewport(sf::FloatRect(viewportX, viewportY, scaleX, scaleY));
+}
+
 int main() {
     srand(static_cast<unsigned int>(time(NULL)));
 
-    sf::RenderWindow window(sf::VideoMode(WIDTH, HEIGHT), "Asteroids Multiplayer");
+    sf::VideoMode desktopMode = sf::VideoMode::getDesktopMode();
+    // Use sf::Style::None para tela cheia sem bordas
+    sf::RenderWindow window(sf::VideoMode(desktopMode.width, desktopMode.height), "Asteroids Multiplayer", sf::Style::None); 
     window.setFramerateLimit(60);
+    window.setPosition(sf::Vector2i(0, 0)); 
+    window.setMouseCursorVisible(false); // Opcional, esconde o cursor
 
+    // --- CONFIGURAÇÃO DA sf::View PARA PREENCHER A TELA (STRETCH TO FILL) ---
+    sf::View gameView(sf::FloatRect(0, 0, WIDTH, HEIGHT)); // Sua resolução de jogo "virtual"
+    gameView.setViewport(sf::FloatRect(0.0f, 0.0f, 1.0f, 1.0f)); // Ocupa 100% da janela
+    window.setView(gameView);
+    
     sf::Font font;
     if (!font.loadFromFile("PixelifySans-Regular.ttf")) { // Certifique-se que arial.ttf está na pasta do executável
         return EXIT_FAILURE;
     }
+
 
     // --- TEXTO DE GAME OVER ÚNICO (APARECE QUANDO QUALQUER UM MORRE) ---
     sf::Text gameOverText; // Texto centralizado de Game Over
