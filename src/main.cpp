@@ -62,14 +62,6 @@ int main() {
     for (auto& bullet : bullets2) { bullet.shape.setFillColor(sf::Color::Cyan); }
 
     std::vector<Asteroid> asteroids;
-    for (int i = 0; i < 5; ++i) {
-        float x = rand() % WIDTH;
-        float y = rand() % (HEIGHT - 100);
-        float vx = (rand() % 100) / 50.0f - 1.0f;
-        float vy = (rand() % 100) / 50.0f - 1.0f;
-        asteroids.emplace_back(sf::Vector2f(x, y), sf::Vector2f(vx, vy), 3);
-    }
-
     sf::Clock asteroidClock;
     
     sf::Text scoreText1; 
@@ -165,19 +157,33 @@ int main() {
             for (auto& bullet : bullets2) bullet.update();
             for (auto& asteroid : asteroids) asteroid.update();
 
-            // Spawn de novos asteroides (só enquanto o jogo não for Game Over geral)
-            if (asteroidClock.getElapsedTime().asSeconds() > 5.0f && asteroids.size() < 10) {
-                int side = rand() % 4; sf::Vector2f pos;
-                if (side == 0) pos = sf::Vector2f(-50, rand() % (HEIGHT - 100));
-                else if (side == 1) pos = sf::Vector2f(WIDTH + 50, rand() % (HEIGHT - 100));
-                else if (side == 2) pos = sf::Vector2f(rand() % WIDTH, -50);
-                else pos = sf::Vector2f(rand() % WIDTH, HEIGHT + 50);
-                float x = rand() % WIDTH; // <--- ADICIONE 'float' AQUI
-                float y = rand() % (HEIGHT - 100);
-                float vx = (rand() % 100) / 50.0f - 1.0f; 
-                float vy = (rand() % 100) / 50.0f - 1.0f;
+            // SPAWN DE NOVOS ASTEROIDES
+            if (asteroidClock.getElapsedTime().asSeconds() > 1.0f) {
+                float x = rand() % WIDTH;
+                float y = -50;
+                float vx = (rand() % 100) / 100.0f - 0.5f;
+                float vy = 1.0f + (rand() % 100) / 25.0f;
                 asteroids.emplace_back(sf::Vector2f(x, y), sf::Vector2f(vx, vy), 3);
                 asteroidClock.restart();
+            }
+
+            // Spawn de novos asteroides (só enquanto o jogo não for Game Over geral)
+            for (size_t i = 0; i < asteroids.size(); ) {
+                asteroids[i].update();
+                
+                if (asteroids[i].getPosition().y > HEIGHT + 50) {
+                    // Recicla o asteroide
+                    float newX = rand() % WIDTH;
+                    float newY = -50;
+                    float newVx = (rand() % 100) / 100.0f - 0.5f;
+                    float newVy = 1.0f + (rand() % 100) / 25.0f;
+                    
+                    asteroids[i] = Asteroid(sf::Vector2f(newX, newY), sf::Vector2f(newVx, newVy), 3);
+                    i++;
+                }
+                else {
+                    i++;
+                }
             }
 
             // --- Colisões (apenas se a nave estiver viva) ---
