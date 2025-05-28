@@ -4,6 +4,7 @@
 #include <string>    // Para std::to_string
 #include <cstdlib>   // Para rand(), srand()
 #include <ctime>     // Para time()
+#include <iostream>
 
 #include "Spaceship.h"
 #include "Bullet.h"
@@ -14,6 +15,17 @@
 using namespace GameConstants; 
 
 int main() {
+
+    srand(static_cast<unsigned int>(time(NULL)));
+
+    // Verifica se há joysticks conectados
+    if (sf::Joystick::isConnected(0)) {
+        std::cout << "Joystick 0 conectado!" << std::endl;
+    }
+    if (sf::Joystick::isConnected(1)) {
+        std::cout << "Joystick 1 conectado!" << std::endl;
+    }
+
     srand(static_cast<unsigned int>(time(NULL)));
 
     sf::RenderWindow window(sf::VideoMode(WIDTH, HEIGHT), "Asteroids Multiplayer");
@@ -85,8 +97,16 @@ int main() {
             if (event.type == sf::Event::Closed)
                 window.close();
 
+            if (event.type == sf::Event::JoystickConnected) {
+                std::cout << "Joystick " << event.joystickConnect.joystickId << " conectado!" << std::endl;
+            }
+            if (event.type == sf::Event::JoystickDisconnected) {
+                std::cout << "Joystick " << event.joystickConnect.joystickId << " desconectado!" << std::endl;
+            }
+
             // --- Lógica de Reinício do Jogo (ativada se o jogo está em GAME_OVER) ---
-            if (game.isGameOver() && event.type == sf::Event::KeyPressed) {
+            if (game.isGameOver() && (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::R) || 
+    (event.type == sf::Event::JoystickButtonPressed && event.joystickButton.button == 7)) {
                 if (event.key.code == sf::Keyboard::R) {
                     game.reset(); 
 
@@ -134,20 +154,60 @@ int main() {
         // --- CONTROLES E ATUALIZAÇÕES DO JOGO (somente se não for Game Over global) ---
         if (!game.isGameOver()) { 
             // Controles só para jogadores vivos
+            // Controles do jogador 1 (Joystick 0)
             if (player1.isAlive) {
-                if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) { player1.angle -= 3.0f; }
-                if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) { player1.angle += 3.0f; }
-                if (sf::Keyboard::isKeyPressed(sf::Keyboard::W)) { player1.accelerate(0.1f); }
-                if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) { player1.accelerate(-0.05f); }
+                // Eixo X do analógico esquerdo para virar
+                float joystickX = sf::Joystick::getAxisPosition(0, sf::Joystick::X);
+                if (std::abs(joystickX) > 25.0f) {  // Deadzone de 25%
+                    player1.angle += joystickX * 0.085f;  // Ajuste a sensibilidade conforme necessário
+                }
+
+                // Gatilho direito para acelerar
+                float trigger = sf::Joystick::getAxisPosition(0, sf::Joystick::Z) / 100.0f;
+                if (trigger > 0.1f) {
+                    player1.accelerate(trigger * 0.1f);
+                }
+
+                // Botão A (0) para atirar
+                if (sf::Joystick::isButtonPressed(0, 0) && player1.canFire()) {
+                    for (auto& bullet : bullets1) {
+                        if (!bullet.isActive) { 
+                            bullet.fire(player1.getFirePosition(), player1.angle); 
+                            player1.resetFireCooldown(); 
+                            break; 
+                        }
+                    }
+                }
+
                 player1.decelerate();
                 player1.update();
             }
 
+            // Controles do jogador 2 (Joystick 1)
             if (player2.isAlive) {
-                if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) { player2.angle -= 3.0f; }
-                if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) { player2.angle += 3.0f; }
-                if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up)) { player2.accelerate(0.1f); }
-                if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down)) { player2.accelerate(-0.05f); }
+                // Eixo X do analógico esquerdo para virar
+                float joystickX = sf::Joystick::getAxisPosition(1, sf::Joystick::X);
+                if (std::abs(joystickX) > 25.0f) {  // Deadzone de 25%
+                    player2.angle += joystickX * 0.1f;
+                }
+
+                // Gatilho direito para acelerar
+                float trigger = sf::Joystick::getAxisPosition(1, sf::Joystick::Z) / 100.0f;
+                if (trigger > 0.1f) {
+                    player2.accelerate(trigger * 0.1f);
+                }
+
+                // Botão A (0) para atirar
+                if (sf::Joystick::isButtonPressed(1, 0) && player2.canFire()) {
+                    for (auto& bullet : bullets2) {
+                        if (!bullet.isActive) { 
+                            bullet.fire(player2.getFirePosition(), player2.angle); 
+                            player2.resetFireCooldown(); 
+                            break; 
+                        }
+                    }
+                }
+
                 player2.decelerate();
                 player2.update();
             }
@@ -157,8 +217,8 @@ int main() {
             for (auto& bullet : bullets2) bullet.update();
             for (auto& asteroid : asteroids) asteroid.update();
 
-            // SPAWN DE NOVOS ASTEROIDES
-            if (asteroidClock.getElapsedTime().asSeconds() > 1.0f) {
+            //! SPAWN DE NOVOS ASTEROIDES
+            if (asteroidClock.getElapsedTime().asSeconds() > 1.5f) {
                 float x = rand() % WIDTH;
                 float y = -50;
                 float vx = (rand() % 100) / 100.0f - 0.5f;
@@ -167,7 +227,7 @@ int main() {
                 asteroidClock.restart();
             }
 
-            // Spawn de novos asteroides (só enquanto o jogo não for Game Over geral)
+            //! Spawn de novos asteroides (só enquanto o jogo não for Game Over geral)
             for (size_t i = 0; i < asteroids.size(); ) {
                 asteroids[i].update();
                 
