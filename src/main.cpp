@@ -18,6 +18,8 @@ using namespace GameConstants;
 int main() {
 
     srand(static_cast<unsigned int>(time(NULL)));
+    sf::Listener::setGlobalVolume(100);
+
 
     // Verifica se há joysticks conectados
     if (sf::Joystick::isConnected(0)) {
@@ -117,8 +119,9 @@ int main() {
 
     while (window.isOpen()) {
         activeSounds.erase(std::remove_if(activeSounds.begin(), activeSounds.end(), 
-                                      [](const sf::Sound& s){ return s.getStatus() == sf::Sound::Stopped; }), 
-                       activeSounds.end());
+                                  [](const sf::Sound& s){ return s.getStatus() == sf::Sound::Stopped; }), 
+                   activeSounds.end());
+
         sf::Event event;
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed)
@@ -201,7 +204,7 @@ int main() {
             }
         } // Fim do while (window.pollEvent(event))
         
-        // --- CONTROLES E ATUALIZAÇÕES DO JOGO (somente se não for Game Over global) ---
+        //? --- CONTROLES E ATUALIZAÇÕES DO JOGO (somente se não for Game Over global) ---
         if (!game.isGameOver()) { 
             // Controles só para jogadores vivos
             // Controles do jogador 1 (Joystick 0)
@@ -214,7 +217,7 @@ int main() {
 
                 // Gatilho direito para acelerar
                 float trigger = sf::Joystick::getAxisPosition(0, sf::Joystick::Z) / 100.0f;
-                if (trigger > 0.1f) {
+                if (trigger > 0.065f) {
                     player1.accelerate(trigger * 0.1f);
                 }
 
@@ -223,7 +226,11 @@ int main() {
                     for (auto& bullet : bullets1) {
                         if (!bullet.isActive) { 
                             bullet.fire(player1.getFirePosition(), player1.angle); 
-                            player1.resetFireCooldown(); 
+                            player1.resetFireCooldown();
+                            activeSounds.emplace_back();
+                            activeSounds.back().setBuffer(shootBuffer);
+                            activeSounds.back().setVolume(70); // Aumente o volume para teste
+                            activeSounds.back().play(); 
                             break; 
                         }
                     }
@@ -244,7 +251,7 @@ int main() {
                 // Gatilho direito para acelerar
                 float trigger = sf::Joystick::getAxisPosition(1, sf::Joystick::Z) / 100.0f;
                 if (trigger > 0.1f) {
-                    player2.accelerate(trigger * 0.1f);
+                    player2.accelerate(trigger * 0.065f);
                 }
 
                 // Botão A (0) para atirar
@@ -253,6 +260,10 @@ int main() {
                         if (!bullet.isActive) { 
                             bullet.fire(player2.getFirePosition(), player2.angle); 
                             player2.resetFireCooldown(); 
+                            activeSounds.emplace_back();
+                            activeSounds.back().setBuffer(shootBuffer);
+                            activeSounds.back().setVolume(70); // Aumente o volume para teste
+                            activeSounds.back().play();
                             break; 
                         }
                     }
