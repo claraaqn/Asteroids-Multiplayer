@@ -302,10 +302,22 @@ int main() {
 
             //! SPAWN DE NOVOS ASTEROIDES
             if (asteroidClock.getElapsedTime().asSeconds() > 1.5f) {
-                float x = rand() % WIDTH;
+                // Sistema de spawn balanceado
+                static bool spawnLeft = true;  // Alternador de lado
+                
+                // Determina o lado de spawn
+                float x;
+                if (spawnLeft) {
+                    x = rand() % (WIDTH / 3);  // 1/3 esquerdo da tela
+                } else {
+                    x = (WIDTH * 2 / 3) + rand() % (WIDTH / 3);  // 1/3 direito da tela
+                }
+                spawnLeft = !spawnLeft;  // Alterna para o outro lado no próximo spawn
+                
                 float y = -50;
                 float vx = (rand() % 100) / 100.0f - 0.5f;
                 float vy = 1.0f + (rand() % 100) / 25.0f;
+                
                 asteroids.emplace_back(sf::Vector2f(x, y), sf::Vector2f(vx, vy), 3);
                 asteroidClock.restart();
             }
@@ -315,8 +327,17 @@ int main() {
                 asteroids[i].update();
                 
                 if (asteroids[i].getPosition().y > HEIGHT + 50) {
-                    // Recicla o asteroide
-                    float newX = rand() % WIDTH;
+                    // Sistema balanceado para reciclagem
+                    static bool recycleLeft = true;
+                    
+                    float newX;
+                    if (recycleLeft) {
+                        newX = rand() % (WIDTH / 3);  // 1/3 esquerdo
+                    } else {
+                        newX = (WIDTH * 2 / 3) + rand() % (WIDTH / 3);  // 1/3 direito
+                    }
+                    recycleLeft = !recycleLeft;
+                    
                     float newY = -50;
                     float newVx = (rand() % 100) / 100.0f - 0.5f;
                     float newVy = 1.0f + (rand() % 100) / 25.0f;
