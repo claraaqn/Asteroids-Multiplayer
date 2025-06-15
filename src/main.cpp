@@ -204,21 +204,37 @@ int main() {
             }
         } // Fim do while (window.pollEvent(event))
         
-        //? --- CONTROLES E ATUALIZAÇÕES DO JOGO (somente se não for Game Over global) ---
-        if (!game.isGameOver()) { 
-            // Controles só para jogadores vivos
-            // Controles do jogador 1 (Joystick 0)
-            if (player1.isAlive) {
-                // Eixo X do analógico esquerdo para virar
-                float joystickX = sf::Joystick::getAxisPosition(0, sf::Joystick::X);
-                if (std::abs(joystickX) > 25.0f) {  // Deadzone de 25%
-                    player1.angle += joystickX * 0.085f;  // Ajuste a sensibilidade conforme necessário
-                }
+            //? --- CONTROLES E ATUALIZAÇÕES DO JOGO (somente se não for Game Over global) ---
+            if (!game.isGameOver()) { 
 
-                // Gatilho direito para acelerar
-                float trigger = sf::Joystick::getAxisPosition(0, sf::Joystick::Z) / 100.0f;
-                if (trigger > 0.065f) {
-                    player1.accelerate(trigger * 0.1f);
+            //! CONTROLES
+            //TODO: Controles do jogador 1 (Joystick 0)
+            if (player1.isAlive) {
+                // Eixo X do analógico esquerdo para movimento lateral
+                float joystickX = sf::Joystick::getAxisPosition(0, sf::Joystick::X);
+                // Eixo Y do analógico esquerdo para movimento frente/trás
+                float joystickY = sf::Joystick::getAxisPosition(0, sf::Joystick::Y);
+                
+                // Deadzone de 15% - precisa mover o joystick além de 15% de sua amplitude total para que o movimento seja detectado
+                if (std::abs(joystickX) > 15.0f || std::abs(joystickY) > 15.0f) {
+                    // Normaliza os valores do joystick
+                    float normX = joystickX / 100.0f;
+                    float normY = -joystickY / 100.0f; //* Invertido porque em SFML, Y cresce para baixo
+                    
+                    // Calcula a direção do movimento baseado no ângulo da nave
+                    float radAngle = player1.angle * (3.14159265f / 180.0f); // Converte para radianos
+                    
+                    // Se você quiser movimento relativo à direção da nave (forward/backward + strafe)
+                    float forwardForce = normY * cos(radAngle) - normX * sin(radAngle);
+                    float lateralForce = normY * sin(radAngle) + normX * cos(radAngle);
+                    
+                    // Aplica as forças
+                    // Movimento frontal puro sem influência lateral
+                    player1.velocity.x += forwardForce * 0.25f;
+                    player1.velocity.y += -forwardForce * 0.25f; 
+                    // Movimento lateral puro
+                    player1.velocity.x += lateralForce * 0.25f;
+                    player1.velocity.y += lateralForce * 0.25f;
                 }
 
                 // Botão A (0) para atirar
@@ -229,7 +245,7 @@ int main() {
                             player1.resetFireCooldown();
                             activeSounds.emplace_back();
                             activeSounds.back().setBuffer(shootBuffer);
-                            activeSounds.back().setVolume(70); // Aumente o volume para teste
+                            activeSounds.back().setVolume(70);
                             activeSounds.back().play(); 
                             break; 
                         }
@@ -240,21 +256,27 @@ int main() {
                 player1.update();
             }
 
-            // Controles do jogador 2 (Joystick 1)
+            //TODO: Controles do jogador 2 (Joystick 1) - similar ao jogador 1
             if (player2.isAlive) {
-                // Eixo X do analógico esquerdo para virar
                 float joystickX = sf::Joystick::getAxisPosition(1, sf::Joystick::X);
-                if (std::abs(joystickX) > 25.0f) {  // Deadzone de 25%
-                    player2.angle += joystickX * 0.1f;
+                float joystickY = sf::Joystick::getAxisPosition(1, sf::Joystick::Y);
+                
+                if (std::abs(joystickX) > 15.0f || std::abs(joystickY) > 15.0f) {
+                    float normX = joystickX / 100.0f;
+                    float normY = -joystickY / 100.0f;
+                    
+                    float radAngle = player2.angle * (3.14159265f / 180.0f);
+                    
+                    float forwardForce = normY * cos(radAngle) - normX * sin(radAngle);
+                    float lateralForce = normY * sin(radAngle) + normX * cos(radAngle);
+                    
+                    player2.velocity.x += forwardForce * 0.25f;
+                    player2.velocity.y += -forwardForce * 0.25f; 
+                    player2.velocity.x += lateralForce * 0.25f;
+                    player2.velocity.y += lateralForce * 0.25f;
+
                 }
 
-                // Gatilho direito para acelerar
-                float trigger = sf::Joystick::getAxisPosition(1, sf::Joystick::Z) / 100.0f;
-                if (trigger > 0.1f) {
-                    player2.accelerate(trigger * 0.065f);
-                }
-
-                // Botão A (0) para atirar
                 if (sf::Joystick::isButtonPressed(1, 0) && player2.canFire()) {
                     for (auto& bullet : bullets2) {
                         if (!bullet.isActive) { 
@@ -262,7 +284,7 @@ int main() {
                             player2.resetFireCooldown(); 
                             activeSounds.emplace_back();
                             activeSounds.back().setBuffer(shootBuffer);
-                            activeSounds.back().setVolume(70); // Aumente o volume para teste
+                            activeSounds.back().setVolume(70);
                             activeSounds.back().play();
                             break; 
                         }
@@ -402,8 +424,6 @@ int main() {
 
         window.draw(scoreText1);
         window.draw(scoreText2);
-
-        // --- Desenha mensagens de Game Over INDIVIDUALMENTE ---
     
 
         // --- Desenha o texto de reinício GLOBAL se o jogo estiver em GAME_OVER ---
