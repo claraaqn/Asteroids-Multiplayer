@@ -4,6 +4,7 @@
 #include <string>    // Para std::to_string
 #include <cstdlib>   // Para rand(), srand()
 #include <ctime>     // Para time()
+#include <SFML/Audio.hpp>
 #include <iostream>
 
 #include "Spaceship.h"
@@ -17,6 +18,8 @@ using namespace GameConstants;
 int main() {
 
     srand(static_cast<unsigned int>(time(NULL)));
+    sf::Listener::setGlobalVolume(100);
+
 
     // Verifica se há joysticks conectados
     if (sf::Joystick::isConnected(0)) {
@@ -27,12 +30,34 @@ int main() {
     }
 
     srand(static_cast<unsigned int>(time(NULL)));
-
-    sf::RenderWindow window(sf::VideoMode(WIDTH, HEIGHT), "Asteroids Multiplayer");
+    
+    sf::VideoMode desktopMode = sf::VideoMode::getDesktopMode();
+    // Use sf::Style::None para tela cheia sem bordas
+    sf::RenderWindow window(sf::VideoMode(desktopMode.width, desktopMode.height), "Asteroids Multiplayer", sf::Style::None); 
     window.setFramerateLimit(60);
+    window.setPosition(sf::Vector2i(0, 0)); 
+    window.setMouseCursorVisible(false); // Opcional, esconde o cursor
 
+    // --- CONFIGURAÇÃO DA sf::View PARA PREENCHER A TELA (STRETCH TO FILL) ---
+    sf::View gameView(sf::FloatRect(0, 0, WIDTH, HEIGHT)); // Sua resolução de jogo "virtual"
+    gameView.setViewport(sf::FloatRect(0.0f, 0.0f, 1.0f, 1.0f)); // Ocupa 100% da janela
+    window.setView(gameView);
+    
     sf::Font font;
     if (!font.loadFromFile("PixelifySans-Regular.ttf")) { // Certifique-se que arial.ttf está na pasta do executável
+        return EXIT_FAILURE;
+    }
+
+    // --- CARREGAMENTO DE EFEITOS SONOROS ---
+    sf::SoundBuffer shootBuffer;
+    if (!shootBuffer.loadFromFile("assets/laser1.wav")) {
+        // Handle error: could not load audio file
+        return EXIT_FAILURE;
+    }
+
+    sf::SoundBuffer explosionBuffer;
+    if (!explosionBuffer.loadFromFile("assets/explosion.wav")) {
+        // Handle error: could not load audio file
         return EXIT_FAILURE;
     }
 
@@ -69,6 +94,7 @@ int main() {
 
     std::vector<Bullet> bullets1(10);
     std::vector<Bullet> bullets2(10);
+    std::vector<sf::Sound> activeSounds;
 
     for (auto& bullet : bullets1) { bullet.shape.setFillColor(sf::Color::Green); }
     for (auto& bullet : bullets2) { bullet.shape.setFillColor(sf::Color::Cyan); }
@@ -92,6 +118,10 @@ int main() {
     int score2 = 0;
 
     while (window.isOpen()) {
+        activeSounds.erase(std::remove_if(activeSounds.begin(), activeSounds.end(), 
+                                  [](const sf::Sound& s){ return s.getStatus() == sf::Sound::Stopped; }), 
+                   activeSounds.end());
+
         sf::Event event;
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed)
@@ -104,9 +134,11 @@ int main() {
                 std::cout << "Joystick " << event.joystickConnect.joystickId << " desconectado!" << std::endl;
             }
 
+
             // --- Lógica de Reinício do Jogo (ativada se o jogo está em GAME_OVER) ---
             if (game.isGameOver() && (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::R) || 
     (event.type == sf::Event::JoystickButtonPressed && event.joystickButton.button == 7)) {
+
                 if (event.key.code == sf::Keyboard::R) {
                     game.reset(); 
 
@@ -139,33 +171,70 @@ int main() {
             if (event.type == sf::Event::KeyPressed) {
                 if (event.key.code == sf::Keyboard::Space && player1.canFire() && player1.isAlive) {
                     for (auto& bullet : bullets1) {
-                        if (!bullet.isActive) { bullet.fire(player1.getFirePosition(), player1.angle); player1.resetFireCooldown(); break; }
+                        if (!bullet.isActive) { 
+                            bullet.fire(player1.getFirePosition(), player1.angle); 
+                            player1.resetFireCooldown(); 
+                            
+                           
+                            activeSounds.emplace_back();
+                            activeSounds.back().setBuffer(shootBuffer);
+                            activeSounds.back().setVolume(70); // Aumente o volume para teste
+                            activeSounds.back().play(); // <--- ADICIONE AO VETOR!
+                            break;  
+                        }
                     }
                 }
                 if ((event.key.code == sf::Keyboard::Enter || event.key.code == sf::Keyboard::Return) && 
                     player2.canFire() && player2.isAlive){               
                         for (auto& bullet : bullets2) {
-                            if (!bullet.isActive) { bullet.fire(player2.getFirePosition(), player2.angle); player2.resetFireCooldown(); break; }
+                            if (!bullet.isActive) { 
+                                 bullet.fire(player2.getFirePosition(), player2.angle); 
+                                player2.resetFireCooldown(); 
+                               
+                                
+                            activeSounds.emplace_back();
+                            activeSounds.back().setBuffer(shootBuffer);
+                            activeSounds.back().setVolume(70); // Aumente o volume para teste
+                            activeSounds.back().play(); // <--- ADICIONE AO VETOR!
+                           
+                                break; 
+                            }
                         }
                 }
             }
         } // Fim do while (window.pollEvent(event))
         
-        // --- CONTROLES E ATUALIZAÇÕES DO JOGO (somente se não for Game Over global) ---
-        if (!game.isGameOver()) { 
-            // Controles só para jogadores vivos
-            // Controles do jogador 1 (Joystick 0)
-            if (player1.isAlive) {
-                // Eixo X do analógico esquerdo para virar
-                float joystickX = sf::Joystick::getAxisPosition(0, sf::Joystick::X);
-                if (std::abs(joystickX) > 25.0f) {  // Deadzone de 25%
-                    player1.angle += joystickX * 0.085f;  // Ajuste a sensibilidade conforme necessário
-                }
+            //? --- CONTROLES E ATUALIZAÇÕES DO JOGO (somente se não for Game Over global) ---
+            if (!game.isGameOver()) { 
 
-                // Gatilho direito para acelerar
-                float trigger = sf::Joystick::getAxisPosition(0, sf::Joystick::Z) / 100.0f;
-                if (trigger > 0.1f) {
-                    player1.accelerate(trigger * 0.1f);
+            //! CONTROLES
+            //TODO: Controles do jogador 1 (Joystick 0)
+            if (player1.isAlive) {
+                // Eixo X do analógico esquerdo para movimento lateral
+                float joystickX = sf::Joystick::getAxisPosition(0, sf::Joystick::X);
+                // Eixo Y do analógico esquerdo para movimento frente/trás
+                float joystickY = sf::Joystick::getAxisPosition(0, sf::Joystick::Y);
+                
+                // Deadzone de 15% - precisa mover o joystick além de 15% de sua amplitude total para que o movimento seja detectado
+                if (std::abs(joystickX) > 15.0f || std::abs(joystickY) > 15.0f) {
+                    // Normaliza os valores do joystick
+                    float normX = joystickX / 100.0f;
+                    float normY = -joystickY / 100.0f; //* Invertido porque em SFML, Y cresce para baixo
+                    
+                    // Calcula a direção do movimento baseado no ângulo da nave
+                    float radAngle = player1.angle * (3.14159265f / 180.0f); // Converte para radianos
+                    
+                    // Se você quiser movimento relativo à direção da nave (forward/backward + strafe)
+                    float forwardForce = normY * cos(radAngle) - normX * sin(radAngle);
+                    float lateralForce = normY * sin(radAngle) + normX * cos(radAngle);
+                    
+                    // Aplica as forças
+                    // Movimento frontal puro sem influência lateral
+                    player1.velocity.x += forwardForce * 0.25f;
+                    player1.velocity.y += -forwardForce * 0.25f; 
+                    // Movimento lateral puro
+                    player1.velocity.x += lateralForce * 0.25f;
+                    player1.velocity.y += lateralForce * 0.25f;
                 }
 
                 // Botão A (0) para atirar
@@ -173,7 +242,11 @@ int main() {
                     for (auto& bullet : bullets1) {
                         if (!bullet.isActive) { 
                             bullet.fire(player1.getFirePosition(), player1.angle); 
-                            player1.resetFireCooldown(); 
+                            player1.resetFireCooldown();
+                            activeSounds.emplace_back();
+                            activeSounds.back().setBuffer(shootBuffer);
+                            activeSounds.back().setVolume(70);
+                            activeSounds.back().play(); 
                             break; 
                         }
                     }
@@ -183,26 +256,36 @@ int main() {
                 player1.update();
             }
 
-            // Controles do jogador 2 (Joystick 1)
+            //TODO: Controles do jogador 2 (Joystick 1) - similar ao jogador 1
             if (player2.isAlive) {
-                // Eixo X do analógico esquerdo para virar
                 float joystickX = sf::Joystick::getAxisPosition(1, sf::Joystick::X);
-                if (std::abs(joystickX) > 25.0f) {  // Deadzone de 25%
-                    player2.angle += joystickX * 0.1f;
+                float joystickY = sf::Joystick::getAxisPosition(1, sf::Joystick::Y);
+                
+                if (std::abs(joystickX) > 15.0f || std::abs(joystickY) > 15.0f) {
+                    float normX = joystickX / 100.0f;
+                    float normY = -joystickY / 100.0f;
+                    
+                    float radAngle = player2.angle * (3.14159265f / 180.0f);
+                    
+                    float forwardForce = normY * cos(radAngle) - normX * sin(radAngle);
+                    float lateralForce = normY * sin(radAngle) + normX * cos(radAngle);
+                    
+                    player2.velocity.x += forwardForce * 0.25f;
+                    player2.velocity.y += -forwardForce * 0.25f; 
+                    player2.velocity.x += lateralForce * 0.25f;
+                    player2.velocity.y += lateralForce * 0.25f;
+
                 }
 
-                // Gatilho direito para acelerar
-                float trigger = sf::Joystick::getAxisPosition(1, sf::Joystick::Z) / 100.0f;
-                if (trigger > 0.1f) {
-                    player2.accelerate(trigger * 0.1f);
-                }
-
-                // Botão A (0) para atirar
                 if (sf::Joystick::isButtonPressed(1, 0) && player2.canFire()) {
                     for (auto& bullet : bullets2) {
                         if (!bullet.isActive) { 
                             bullet.fire(player2.getFirePosition(), player2.angle); 
                             player2.resetFireCooldown(); 
+                            activeSounds.emplace_back();
+                            activeSounds.back().setBuffer(shootBuffer);
+                            activeSounds.back().setVolume(70);
+                            activeSounds.back().play();
                             break; 
                         }
                     }
@@ -219,10 +302,22 @@ int main() {
 
             //! SPAWN DE NOVOS ASTEROIDES
             if (asteroidClock.getElapsedTime().asSeconds() > 1.5f) {
-                float x = rand() % WIDTH;
+                // Sistema de spawn balanceado
+                static bool spawnLeft = true;  // Alternador de lado
+                
+                // Determina o lado de spawn
+                float x;
+                if (spawnLeft) {
+                    x = rand() % (WIDTH / 3);  // 1/3 esquerdo da tela
+                } else {
+                    x = (WIDTH * 2 / 3) + rand() % (WIDTH / 3);  // 1/3 direito da tela
+                }
+                spawnLeft = !spawnLeft;  // Alterna para o outro lado no próximo spawn
+                
                 float y = -50;
                 float vx = (rand() % 100) / 100.0f - 0.5f;
                 float vy = 1.0f + (rand() % 100) / 25.0f;
+                
                 asteroids.emplace_back(sf::Vector2f(x, y), sf::Vector2f(vx, vy), 3);
                 asteroidClock.restart();
             }
@@ -232,8 +327,17 @@ int main() {
                 asteroids[i].update();
                 
                 if (asteroids[i].getPosition().y > HEIGHT + 50) {
-                    // Recicla o asteroide
-                    float newX = rand() % WIDTH;
+                    // Sistema balanceado para reciclagem
+                    static bool recycleLeft = true;
+                    
+                    float newX;
+                    if (recycleLeft) {
+                        newX = rand() % (WIDTH / 3);  // 1/3 esquerdo
+                    } else {
+                        newX = (WIDTH * 2 / 3) + rand() % (WIDTH / 3);  // 1/3 direito
+                    }
+                    recycleLeft = !recycleLeft;
+                    
                     float newY = -50;
                     float newVx = (rand() % 100) / 100.0f - 0.5f;
                     float newVy = 1.0f + (rand() % 100) / 25.0f;
@@ -262,7 +366,12 @@ int main() {
                                     asteroids.emplace_back(asteroids[i].getPosition(), vel, asteroids[i].size - 1);
                                 }
                             }
-                            asteroids.erase(asteroids.begin() + i); break;
+                            asteroids.erase(asteroids.begin() + i);
+                            // Adicione este código após apagar o asteroide
+                            activeSounds.emplace_back();
+                            activeSounds.back().setBuffer(explosionBuffer);
+                            activeSounds.back().setVolume(70);
+                            activeSounds.back().play(); break;
                         }
                     }
                 }
@@ -289,7 +398,15 @@ int main() {
                                     asteroids.emplace_back(asteroids[i].getPosition(), vel, asteroids[i].size - 1);
                                 }
                             }
-                            asteroids.erase(asteroids.begin() + i); break;
+                            asteroids.erase(asteroids.begin() + i); 
+                            
+                            // Adicione este código após apagar o asteroide
+                            
+                            activeSounds.emplace_back();
+                            activeSounds.back().setBuffer(explosionBuffer);
+                            activeSounds.back().setVolume(70);
+                            activeSounds.back().play();
+                            break;
                         }
                     }
                 }
@@ -328,8 +445,6 @@ int main() {
 
         window.draw(scoreText1);
         window.draw(scoreText2);
-
-        // --- Desenha mensagens de Game Over INDIVIDUALMENTE ---
     
 
         // --- Desenha o texto de reinício GLOBAL se o jogo estiver em GAME_OVER ---
