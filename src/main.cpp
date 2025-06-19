@@ -37,6 +37,7 @@ int main() {
     window.setFramerateLimit(60);
     window.setPosition(sf::Vector2i(0, 0)); 
     window.setMouseCursorVisible(false); // Opcional, esconde o cursor
+    window.setVerticalSyncEnabled(false);
 
     // --- CONFIGURAÇÃO DA sf::View PARA PREENCHER A TELA (STRETCH TO FILL) ---
     sf::View gameView(sf::FloatRect(0, 0, WIDTH, HEIGHT)); // Sua resolução de jogo "virtual"
@@ -159,10 +160,11 @@ int main() {
             explosion.timer += deltaTime;
         }
 
+        static float currentTimeAsteroids = 0.0f;
+        currentTimeAsteroids += deltaTime;
+
         for (auto& asteroid : asteroids) {
-            static float currentTime = 0.0f;
-            currentTime += deltaTime;
-            asteroid.update(deltaTime, currentTime);
+            asteroid.update(deltaTime, currentTimeAsteroids);
         }
 
 
@@ -192,17 +194,26 @@ int main() {
                     player2 = Spaceship(sf::Vector2f(3*WIDTH/4, HEIGHT - 40), 0, false);
                     player2.shape.setOutlineColor(sf::Color::Cyan);
                     
-                    bullets1.clear(); bullets1.resize(10);
-                    for (auto& bullet : bullets1) bullet.shape.setFillColor(sf::Color::Green);
-                    bullets2.clear(); bullets2.resize(10);
-                    for (auto& bullet : bullets2) bullet.shape.setFillColor(sf::Color::Cyan);
+                    bullets1.clear();
+                    for (int i = 0; i < 10; ++i) {
+                        bullets1.emplace_back();
+                        bullets1.back().shape.setFillColor(sf::Color::Green);
+                        bullets1.back().isActive = false;
+                    }
+                    
+                    bullets2.clear();
+                    for (int i = 0; i < 10; ++i) {
+                        bullets2.emplace_back();
+                        bullets2.back().shape.setFillColor(sf::Color::Cyan);
+                        bullets2.back().isActive = false;
+                    }
                     
                     asteroids.clear();
                     for (int i = 0; i < 5; ++i) {
                         float x = rand() % WIDTH; 
-                        float y = rand() % (HEIGHT - 100); 
+                        float y = -50.0f - (rand() % 100); 
                         float vx = (rand() % 100) / 50.0f - 1.0f; 
-                        float vy = (rand() % 100) / 50.0f - 1.0f; 
+                        float vy = 30.0f + (rand() % 100) / 20.0f;  // Entre 30.0 e 35.0  
                         int size = (rand() % 2) + 2; //todo Tamanho 2 ou 3
                         asteroids.emplace_back(sf::Vector2f(x, y), sf::Vector2f(vx, vy), size);
                     }
@@ -218,6 +229,7 @@ int main() {
                     for (auto& bullet : bullets1) {
                         if (!bullet.isActive) { 
                             bullet.fire(player1.getFirePosition(), player1.angle); 
+                            bullet.isActive = true;
                             player1.resetFireCooldown(); 
                             
                            
@@ -233,7 +245,8 @@ int main() {
                     player2.canFire() && player2.isAlive){               
                         for (auto& bullet : bullets2) {
                             if (!bullet.isActive) { 
-                                 bullet.fire(player2.getFirePosition(), player2.angle); 
+                                bullet.fire(player2.getFirePosition(), player2.angle); 
+                                bullet.isActive = true;
                                 player2.resetFireCooldown(); 
                                
                                 
@@ -340,8 +353,8 @@ int main() {
             }
 
                 // Balas e Asteroides sempre atualizam enquanto o jogo está ativo (não Game Over geral)
-                for (auto& bullet : bullets1) bullet.update();
-                for (auto& bullet : bullets2) bullet.update();
+                for (auto& bullet : bullets1) bullet.update(deltaTime);
+                for (auto& bullet : bullets2) bullet.update(deltaTime);
                 for (auto& asteroid : asteroids) asteroid.update(deltaTime, currentTime);
 
                 //! SPAWN DE NOVOS ASTEROIDES
@@ -358,7 +371,7 @@ int main() {
                     
                     float y = -50;
                     float vx = (rand() % 100) / 100.0f - 0.5f;
-                    float vy = 1.0f + (rand() % 100) / 25.0f;
+                    float vy = 30.0f + (rand() % 100) / 15.0f;  // Entre 30.0 e ~36.5
                     
                     int size = (rand() % 2) + 2; 
                     asteroids.emplace_back(sf::Vector2f(x, y), sf::Vector2f(vx, vy), size);
@@ -398,7 +411,7 @@ int main() {
                                     for (int j = 0; j < fragments; j++) {
                                         // Velocidade aleatória para os fragmentos
                                         float angle = (360.0f / fragments) * j + (rand() % 45 - 22.5f); // Dispersão
-                                        float speed = 1.5f + (rand() % 100) / 50.0f;
+                                        float speed = 20.0f + (rand() % 100) / 20.0f;  // Entre 4.0 e 9.0
                                         sf::Vector2f velocity(
                                             speed * std::cos(angle * PI / 180.0f),
                                             speed * std::sin(angle * PI / 180.0f)

@@ -1,44 +1,32 @@
-#include "Bullet.h" // Inclui a declaração da classe Bullet
-#include <cmath> // Para std::cos, std::sin
-#include "GameConstants.h" // Para PI, WIDTH, HEIGHT
+#include "Bullet.h"
+#include <cmath>
+#include "GameConstants.h"
 
 using namespace GameConstants;
 
-
 Bullet::Bullet() {
-    shape.setRadius(3);
+    shape.setRadius(5);  // Aumentei o raio para melhor visibilidade
     shape.setFillColor(sf::Color::White);
+    shape.setOrigin(5, 5);  // Origem centralizada
     isActive = false;
-    shape.setOrigin(0, 0); // Substituir por uma origem melhor
-
 }
 
 void Bullet::fire(sf::Vector2f pos, float angle) {
-    float rad = (angle - 90) * PI / 180;
     shape.setPosition(pos);
-    velocity.x = 10 * std::cos(rad);
-    velocity.y = 10 * std::sin(rad);
+    float rad = (angle - 90) * PI / 180;
+    
+    velocity.x = std::cos(rad) * SPEED;
+    velocity.y = std::sin(rad) * SPEED;
     isActive = true;
 }
 
-void Bullet::update() {
+void Bullet::update(float deltaTime) {
     if (!isActive) return;
-
-    sf::Vector2f previousPosition = shape.getPosition();
-    shape.move(velocity);
-    sf::Vector2f currentPosition = shape.getPosition();
-
-    // Verifica se saiu da tela
-    if (currentPosition.x < 0 || currentPosition.x > WIDTH ||
-        currentPosition.y < 0 || currentPosition.y > HEIGHT) {
-        isActive = false;
-        return;
-    }
-
-    // Verifica se cruzou a linha divisória (só verifica se houve mudança de lado)
-    if ((previousPosition.x < WIDTH/2 && currentPosition.x >= WIDTH/2) || 
-        (previousPosition.x >= WIDTH/2 && currentPosition.x < WIDTH/2)) {
+    
+    shape.move(velocity * deltaTime);
+    
+    sf::Vector2f pos = shape.getPosition();
+    if (pos.x < 0 || pos.x > WIDTH || pos.y < 0 || pos.y > HEIGHT) {
         isActive = false;
     }
 }
-
