@@ -12,6 +12,7 @@
 #include "Asteroid.h"
 #include "Game.h"
 #include "GameConstants.h"
+#include "AsteroidExplosion.h"
 
 using namespace GameConstants; 
 
@@ -19,7 +20,6 @@ int main() {
 
     srand(static_cast<unsigned int>(time(NULL)));
     sf::Listener::setGlobalVolume(100);
-
 
     // Verifica se há joysticks conectados
     if (sf::Joystick::isConnected(0)) {
@@ -37,6 +37,7 @@ int main() {
     window.setFramerateLimit(60);
     window.setPosition(sf::Vector2i(0, 0)); 
     window.setMouseCursorVisible(false); // Opcional, esconde o cursor
+    window.setVerticalSyncEnabled(false);
 
     // --- CONFIGURAÇÃO DA sf::View PARA PREENCHER A TELA (STRETCH TO FILL) ---
     sf::View gameView(sf::FloatRect(0, 0, WIDTH, HEIGHT)); // Sua resolução de jogo "virtual"
@@ -99,8 +100,36 @@ int main() {
     for (auto& bullet : bullets1) { bullet.shape.setFillColor(sf::Color::Green); }
     for (auto& bullet : bullets2) { bullet.shape.setFillColor(sf::Color::Cyan); }
 
+    sf::Clock explosionClock;
     std::vector<Asteroid> asteroids;
     sf::Clock asteroidClock;
+    std::vector<AsteroidExplosion> asteroidExplosions;
+    sf::Clock gameClock;
+
+    //! desemhar a animação
+    auto drawExplosionAnimation = [&]() {
+        for (size_t i = 0; i < asteroidExplosions.size(); ) {
+            float progress = asteroidExplosions[i].timer / 0.3f; // Animação de 0.3 segundos
+            
+            if (progress >= 1.0f) {
+                asteroidExplosions.erase(asteroidExplosions.begin() + i);
+                continue;
+            }
+            
+            float scale = 1.0f + progress * 2.0f; // Efeito de expansão
+            float alpha = 255 * (1.0f - progress); // Fade out
+            
+            sf::CircleShape explosionShape(asteroidExplosions[i].originalSize * 10 * scale);
+            explosionShape.setOrigin(explosionShape.getRadius(), explosionShape.getRadius());
+            explosionShape.setPosition(asteroidExplosions[i].position);
+            explosionShape.setFillColor(sf::Color(255, 255, 255, static_cast<sf::Uint8>(alpha)));
+            explosionShape.setOutlineColor(sf::Color(255, 100, 0, static_cast<sf::Uint8>(alpha)));
+            explosionShape.setOutlineThickness(2.0f);
+            
+            window.draw(explosionShape);
+            i++;
+        }
+    };
     
     sf::Text scoreText1; 
     scoreText1.setFont(font);
@@ -119,8 +148,25 @@ int main() {
 
     while (window.isOpen()) {
         activeSounds.erase(std::remove_if(activeSounds.begin(), activeSounds.end(), 
-                                  [](const sf::Sound& s){ return s.getStatus() == sf::Sound::Stopped; }), 
+            [](const sf::Sound& s){ return s.getStatus() == sf::Sound::Stopped; }), 
                    activeSounds.end());
+
+        static sf::Clock clock; // Declare como static sf::Clock
+        static float currentTime = 0.0f; 
+        float deltaTime = clock.restart().asSeconds();
+        currentTime += deltaTime;
+
+        for (auto& explosion : asteroidExplosions) {
+            explosion.timer += deltaTime;
+        }
+
+        static float currentTimeAsteroids = 0.0f;
+        currentTimeAsteroids += deltaTime;
+
+        for (auto& asteroid : asteroids) {
+            asteroid.update(deltaTime, currentTimeAsteroids);
+        }
+
 
         sf::Event event;
         while (window.pollEvent(event)) {
@@ -135,9 +181,9 @@ int main() {
             }
 
 
-            // --- Lógica de Reinício do Jogo (ativada se o jogo está em GAME_OVER) ---
-            if (game.isGameOver() && (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::R) || 
-    (event.type == sf::Event::JoystickButtonPressed && event.joystickButton.button == 7)) {
+            //todo --- Lógica de Reinício do Jogo (ativada se o jogo está em GAME_OVER) ---
+            if (game.isGameOver() && ((event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::R) || 
+                 (event.type == sf::Event::JoystickButtonPressed && event.joystickButton.button == 7))) {
 
                 if (event.key.code == sf::Keyboard::R) {
                     game.reset(); 
@@ -148,24 +194,34 @@ int main() {
                     player2 = Spaceship(sf::Vector2f(3*WIDTH/4, HEIGHT - 40), 0, false);
                     player2.shape.setOutlineColor(sf::Color::Cyan);
                     
-                    bullets1.clear(); bullets1.resize(10);
-                    for (auto& bullet : bullets1) bullet.shape.setFillColor(sf::Color::Green);
-                    bullets2.clear(); bullets2.resize(10);
-                    for (auto& bullet : bullets2) bullet.shape.setFillColor(sf::Color::Cyan);
+                    bullets1.clear();
+                    for (int i = 0; i < 10; ++i) {
+                        bullets1.emplace_back();
+                        bullets1.back().shape.setFillColor(sf::Color::Green);
+                        bullets1.back().isActive = false;
+                    }
+                    
+                    bullets2.clear();
+                    for (int i = 0; i < 10; ++i) {
+                        bullets2.emplace_back();
+                        bullets2.back().shape.setFillColor(sf::Color::Cyan);
+                        bullets2.back().isActive = false;
+                    }
                     
                     asteroids.clear();
-                    // Aqui, as variáveis x, y, vx, vy precisam ser declaradas novamente
                     for (int i = 0; i < 5; ++i) {
                         float x = rand() % WIDTH; 
-                        float y = rand() % (HEIGHT - 100); 
+                        float y = -50.0f - (rand() % 100); 
                         float vx = (rand() % 100) / 50.0f - 1.0f; 
-                        float vy = (rand() % 100) / 50.0f - 1.0f; 
-                        asteroids.emplace_back(sf::Vector2f(x, y), sf::Vector2f(vx, vy), 3);
+                        float vy = 30.0f + (rand() % 100) / 20.0f;  // Entre 30.0 e 35.0  
+                        int size = (rand() % 2) + 2; //todo Tamanho 2 ou 3
+                        asteroids.emplace_back(sf::Vector2f(x, y), sf::Vector2f(vx, vy), size);
                     }
                     score1 = 0; score2 = 0; 
-                }
+            
+                } // --- Fim da Lógica de Reinício do Jogo ---
+           
             }
-            // --- Fim da Lógica de Reinício do Jogo ---
 
             // Sistema de tiro por evento (se a nave estiver viva)
             if (event.type == sf::Event::KeyPressed) {
@@ -173,6 +229,7 @@ int main() {
                     for (auto& bullet : bullets1) {
                         if (!bullet.isActive) { 
                             bullet.fire(player1.getFirePosition(), player1.angle); 
+                            bullet.isActive = true;
                             player1.resetFireCooldown(); 
                             
                            
@@ -188,7 +245,8 @@ int main() {
                     player2.canFire() && player2.isAlive){               
                         for (auto& bullet : bullets2) {
                             if (!bullet.isActive) { 
-                                 bullet.fire(player2.getFirePosition(), player2.angle); 
+                                bullet.fire(player2.getFirePosition(), player2.angle); 
+                                bullet.isActive = true;
                                 player2.resetFireCooldown(); 
                                
                                 
@@ -202,62 +260,61 @@ int main() {
                         }
                 }
             }
-        } // Fim do while (window.pollEvent(event))
-        
-            //? --- CONTROLES E ATUALIZAÇÕES DO JOGO (somente se não for Game Over global) ---
+
+            //? LÓGICA DE JOGO
             if (!game.isGameOver()) { 
 
-            //! CONTROLES
-            //TODO: Controles do jogador 1 (Joystick 0)
-            if (player1.isAlive) {
-                // Eixo X do analógico esquerdo para movimento lateral
-                float joystickX = sf::Joystick::getAxisPosition(0, sf::Joystick::X);
-                // Eixo Y do analógico esquerdo para movimento frente/trás
-                float joystickY = sf::Joystick::getAxisPosition(0, sf::Joystick::Y);
-                
-                // Deadzone de 15% - precisa mover o joystick além de 15% de sua amplitude total para que o movimento seja detectado
-                if (std::abs(joystickX) > 15.0f || std::abs(joystickY) > 15.0f) {
-                    // Normaliza os valores do joystick
-                    float normX = joystickX / 100.0f;
-                    float normY = -joystickY / 100.0f; //* Invertido porque em SFML, Y cresce para baixo
+                //! CONTROLES
+                //TODO: Controles do jogador 1 (Joystick 0)
+                if (player1.isAlive) {
+                    // Eixo X do analógico esquerdo para movimento lateral
+                    float joystickX = sf::Joystick::getAxisPosition(0, sf::Joystick::X);
+                    // Eixo Y do analógico esquerdo para movimento frente/trás
+                    float joystickY = sf::Joystick::getAxisPosition(0, sf::Joystick::Y);
                     
-                    // Calcula a direção do movimento baseado no ângulo da nave
-                    float radAngle = player1.angle * (3.14159265f / 180.0f); // Converte para radianos
-                    
-                    // Se você quiser movimento relativo à direção da nave (forward/backward + strafe)
-                    float forwardForce = normY * cos(radAngle) - normX * sin(radAngle);
-                    float lateralForce = normY * sin(radAngle) + normX * cos(radAngle);
-                    
-                    // Aplica as forças
-                    // Movimento frontal puro sem influência lateral
-                    player1.velocity.x += forwardForce * 0.25f;
-                    player1.velocity.y += -forwardForce * 0.25f; 
-                    // Movimento lateral puro
-                    player1.velocity.x += lateralForce * 0.25f;
-                    player1.velocity.y += lateralForce * 0.25f;
-                }
+                    // Deadzone de 15% - precisa mover o joystick além de 15% de sua amplitude total para que o movimento seja detectado
+                    if (std::abs(joystickX) > 15.0f || std::abs(joystickY) > 15.0f) {
+                        // Normaliza os valores do joystick
+                        float normX = joystickX / 100.0f;
+                        float normY = -joystickY / 100.0f; //* Invertido porque em SFML, Y cresce para baixo
+                        
+                        // Calcula a direção do movimento baseado no ângulo da nave
+                        float radAngle = player1.angle * (3.14159265f / 180.0f); // Converte para radianos
+                        
+                        // Se você quiser movimento relativo à direção da nave (forward/backward + strafe)
+                        float forwardForce = normY * cos(radAngle) - normX * sin(radAngle);
+                        float lateralForce = normY * sin(radAngle) + normX * cos(radAngle);
+                        
+                        // Aplica as forças
+                        // Movimento frontal puro sem influência lateral
+                        player1.velocity.x += forwardForce * 0.25f;
+                        player1.velocity.y += -forwardForce * 0.25f; 
+                        // Movimento lateral puro
+                        player1.velocity.x += lateralForce * 0.25f;
+                        player1.velocity.y += lateralForce * 0.25f;
+                    }
 
-                // Botão A (0) para atirar
-                if (sf::Joystick::isButtonPressed(0, 0) && player1.canFire()) {
-                    for (auto& bullet : bullets1) {
-                        if (!bullet.isActive) { 
-                            bullet.fire(player1.getFirePosition(), player1.angle); 
-                            player1.resetFireCooldown();
-                            activeSounds.emplace_back();
-                            activeSounds.back().setBuffer(shootBuffer);
-                            activeSounds.back().setVolume(70);
-                            activeSounds.back().play(); 
-                            break; 
+                    // Botão A (0) para atirar
+                    if (sf::Joystick::isButtonPressed(0, 0) && player1.canFire()) {
+                        for (auto& bullet : bullets1) {
+                            if (!bullet.isActive) { 
+                                bullet.fire(player1.getFirePosition(), player1.angle); 
+                                player1.resetFireCooldown();
+                                activeSounds.emplace_back();
+                                activeSounds.back().setBuffer(shootBuffer);
+                                activeSounds.back().setVolume(70);
+                                activeSounds.back().play(); 
+                                break; 
+                            }
                         }
                     }
+
+                    player1.decelerate();
+                    player1.update();
                 }
 
-                player1.decelerate();
-                player1.update();
-            }
-
-            //TODO: Controles do jogador 2 (Joystick 1) - similar ao jogador 1
-            if (player2.isAlive) {
+                //TODO: Controles do jogador 2 (Joystick 1) - similar ao jogador 1
+                if (player2.isAlive) {
                 float joystickX = sf::Joystick::getAxisPosition(1, sf::Joystick::X);
                 float joystickY = sf::Joystick::getAxisPosition(1, sf::Joystick::Y);
                 
@@ -295,145 +352,189 @@ int main() {
                 player2.update();
             }
 
-            // Balas e Asteroides sempre atualizam enquanto o jogo está ativo (não Game Over geral)
-            for (auto& bullet : bullets1) bullet.update();
-            for (auto& bullet : bullets2) bullet.update();
-            for (auto& asteroid : asteroids) asteroid.update();
+                // Balas e Asteroides sempre atualizam enquanto o jogo está ativo (não Game Over geral)
+                for (auto& bullet : bullets1) bullet.update(deltaTime);
+                for (auto& bullet : bullets2) bullet.update(deltaTime);
+                for (auto& asteroid : asteroids) asteroid.update(deltaTime, currentTime);
 
-            //! SPAWN DE NOVOS ASTEROIDES
-            if (asteroidClock.getElapsedTime().asSeconds() > 1.5f) {
-                // Sistema de spawn balanceado
-                static bool spawnLeft = true;  // Alternador de lado
-                
-                // Determina o lado de spawn
-                float x;
-                if (spawnLeft) {
-                    x = rand() % (WIDTH / 3);  // 1/3 esquerdo da tela
-                } else {
-                    x = (WIDTH * 2 / 3) + rand() % (WIDTH / 3);  // 1/3 direito da tela
-                }
-                spawnLeft = !spawnLeft;  // Alterna para o outro lado no próximo spawn
-                
-                float y = -50;
-                float vx = (rand() % 100) / 100.0f - 0.5f;
-                float vy = 1.0f + (rand() % 100) / 25.0f;
-                
-                asteroids.emplace_back(sf::Vector2f(x, y), sf::Vector2f(vx, vy), 3);
-                asteroidClock.restart();
-            }
-
-            //! Spawn de novos asteroides (só enquanto o jogo não for Game Over geral)
-            for (size_t i = 0; i < asteroids.size(); ) {
-                asteroids[i].update();
-                
-                if (asteroids[i].getPosition().y > HEIGHT + 50) {
-                    // Sistema balanceado para reciclagem
-                    static bool recycleLeft = true;
+                //! SPAWN DE NOVOS ASTEROIDES
+                if (asteroidClock.getElapsedTime().asSeconds() > 1.5f) {
+                    static bool spawnLeft = true;  
                     
-                    float newX;
-                    if (recycleLeft) {
-                        newX = rand() % (WIDTH / 3);  // 1/3 esquerdo
+                    float x;
+                    if (spawnLeft) {
+                        x = rand() % (WIDTH / 3);  
                     } else {
-                        newX = (WIDTH * 2 / 3) + rand() % (WIDTH / 3);  // 1/3 direito
+                        x = (WIDTH * 2 / 3) + rand() % (WIDTH / 3);  
                     }
-                    recycleLeft = !recycleLeft;
+                    spawnLeft = !spawnLeft;  
                     
-                    float newY = -50;
-                    float newVx = (rand() % 100) / 100.0f - 0.5f;
-                    float newVy = 1.0f + (rand() % 100) / 25.0f;
+                    float y = -50;
+                    float vx = (rand() % 100) / 100.0f - 0.5f;
+                    float vy = 30.0f + (rand() % 100) / 15.0f;  // Entre 30.0 e ~36.5
                     
-                    asteroids[i] = Asteroid(sf::Vector2f(newX, newY), sf::Vector2f(newVx, newVy), 3);
-                    i++;
+                    int size = (rand() % 2) + 2; 
+                    asteroids.emplace_back(sf::Vector2f(x, y), sf::Vector2f(vx, vy), size);
+                    asteroidClock.restart();
                 }
-                else {
-                    i++;
-                }
-            }
 
-            // --- Colisões (apenas se a nave estiver viva) ---
-            if (player1.isAlive) {
-                for (auto& bullet : bullets1) {
-                    if (!bullet.isActive) continue;
-                    for (size_t i = 0; i < asteroids.size(); ++i) {
-                        sf::Vector2f diff = bullet.shape.getPosition() - asteroids[i].getPosition();
-                        float distance = std::sqrt(diff.x * diff.x + diff.y * diff.y);
-                        if (distance < asteroids[i].getRadius()) {
-                            bullet.isActive = false; score1 += (4 - asteroids[i].size) * 10;
-                            if (asteroids[i].size > 1) {
-                                for (int j = 0; j < 2; ++j) {
-                                    float angle = rand() % 360 * PI / 180; float speed = 1 + (rand() % 100) / 50.0f;
-                                    sf::Vector2f vel(speed * std::cos(angle), speed * std::sin(angle));
-                                    asteroids.emplace_back(asteroids[i].getPosition(), vel, asteroids[i].size - 1);
+                //? Colisões - player 1
+                if (player1.isAlive) {
+                    for (auto& bullet : bullets1) {
+                        if (!bullet.isActive) continue;
+                        
+                        for (size_t i = 0; i < asteroids.size(); ) {
+                            sf::Vector2f diff = bullet.shape.getPosition() - asteroids[i].getPosition();
+                            float distance = std::sqrt(diff.x * diff.x + diff.y * diff.y);
+                            
+                            if (distance < asteroids[i].getRadius()) {
+                                bullet.isActive = false;
+                                score1 += (4 - asteroids[i].getSize()) * 10; // Ajuste para score2 no jogador 2
+                                
+                                // Efeito de explosão
+                                asteroidExplosions.push_back({
+                                    asteroids[i].getPosition(),
+                                    0.0f,
+                                    asteroids[i].getSize()
+                                });
+
+                                // Posição onde o asteroide foi atingido
+                                sf::Vector2f hitPosition = asteroids[i].getPosition();
+                                int originalSize = asteroids[i].getSize();
+
+                                // Remove o asteroide atingido
+                                asteroids.erase(asteroids.begin() + i);
+
+                                // Se era tamanho 2 ou 3, cria novos asteroides de tamanho 1 no mesmo lugar
+                                if (originalSize > 1) {
+                                    int fragments = originalSize; // 2 ou 3 fragmentos
+                                    for (int j = 0; j < fragments; j++) {
+                                        // Velocidade aleatória para os fragmentos
+                                        float angle = (360.0f / fragments) * j + (rand() % 45 - 22.5f); // Dispersão
+                                        float speed = 20.0f + (rand() % 100) / 20.0f;  // Entre 4.0 e 9.0
+                                        sf::Vector2f velocity(
+                                            speed * std::cos(angle * PI / 180.0f),
+                                            speed * std::sin(angle * PI / 180.0f)
+                                        );
+
+                                        // Cria novo asteroide de tamanho 1 na posição do impacto
+                                        asteroids.emplace_back(hitPosition, velocity, 1);
+                                    }
                                 }
+
+                                // Som de explosão
+                                activeSounds.emplace_back();
+                                activeSounds.back().setBuffer(explosionBuffer);
+                                activeSounds.back().setVolume(70);
+                                activeSounds.back().play();
+
+                                break; // Sai do loop após acertar um asteroide
+                            } else {
+                                i++; // Próximo asteroide se não houve colisão
                             }
-                            asteroids.erase(asteroids.begin() + i);
-                            // Adicione este código após apagar o asteroide
-                            activeSounds.emplace_back();
-                            activeSounds.back().setBuffer(explosionBuffer);
-                            activeSounds.back().setVolume(70);
-                            activeSounds.back().play(); break;
+                        }
+                    }
+                    
+                    // Colisão nave-asteroide para Player 1
+                    for (const auto& asteroid : asteroids) {
+                        sf::Vector2f diff = player1.position - asteroid.getPosition();
+                        float distance = std::sqrt(diff.x * diff.x + diff.y * diff.y);
+                        if (distance < asteroid.getRadius() + 20) { 
+                            player1.isAlive = false; 
+                            break; 
                         }
                     }
                 }
-                // Colisão nave-asteroide para Player 1
-                for (const auto& asteroid : asteroids) {
-                    sf::Vector2f diff = player1.position - asteroid.getPosition();
-                    float distance = std::sqrt(diff.x * diff.x + diff.y * diff.y);
-                    if (distance < asteroid.getRadius() + 20) { player1.isAlive = false; break; }
-                }
-            }
 
-            if (player2.isAlive) {
-                for (auto& bullet : bullets2) {
-                    if (!bullet.isActive) continue;
-                    for (size_t i = 0; i < asteroids.size(); ++i) {
-                        sf::Vector2f diff = bullet.shape.getPosition() - asteroids[i].getPosition();
-                        float distance = std::sqrt(diff.x * diff.x + diff.y * diff.y);
-                        if (distance < asteroids[i].getRadius()) {
-                            bullet.isActive = false; score2 += (4 - asteroids[i].size) * 10;
-                            if (asteroids[i].size > 1) {
-                                for (int j = 0; j < 2; ++j) {
-                                    float angle = rand() % 360 * PI / 180; float speed = 1 + (rand() % 100) / 50.0f;
-                                    sf::Vector2f vel(speed * std::cos(angle), std::sin(angle));
-                                    asteroids.emplace_back(asteroids[i].getPosition(), vel, asteroids[i].size - 1);
+                //? Colisões - player 2
+                if (player2.isAlive) {
+                    for (auto& bullet : bullets2) {
+                        if (!bullet.isActive) continue;
+                        
+                        for (size_t i = 0; i < asteroids.size(); ) {
+                            sf::Vector2f diff = bullet.shape.getPosition() - asteroids[i].getPosition();
+                            float distance = std::sqrt(diff.x * diff.x + diff.y * diff.y);
+                            
+                            if (distance < asteroids[i].getRadius()) {
+                                bullet.isActive = false;
+                                score2 += (4 - asteroids[i].getSize()) * 10; // Ajuste para score2 no jogador 2
+                                
+                                // Efeito de explosão
+                                asteroidExplosions.push_back({
+                                    asteroids[i].getPosition(),
+                                    0.0f,
+                                    asteroids[i].getSize()
+                                });
+
+                                // Posição onde o asteroide foi atingido
+                                sf::Vector2f hitPosition = asteroids[i].getPosition();
+                                int originalSize = asteroids[i].getSize();
+
+                                // Remove o asteroide atingido
+                                asteroids.erase(asteroids.begin() + i);
+
+                                // Se era tamanho 2 ou 3, cria novos asteroides de tamanho 1 no mesmo lugar
+                                if (originalSize > 1) {
+                                    int fragments = originalSize; // 2 ou 3 fragmentos
+                                    for (int j = 0; j < fragments; j++) {
+                                        // Velocidade aleatória para os fragmentos
+                                        float angle = (360.0f / fragments) * j + (rand() % 45 - 22.5f); // Dispersão
+                                        float speed = 1.5f + (rand() % 100) / 50.0f;
+                                        sf::Vector2f velocity(
+                                            speed * std::cos(angle * PI / 180.0f),
+                                            speed * std::sin(angle * PI / 180.0f)
+                                        );
+
+                                        // Cria novo asteroide de tamanho 1 na posição do impacto
+                                        asteroids.emplace_back(hitPosition, velocity, 1);
+                                    }
                                 }
+
+                                // Som de explosão
+                                activeSounds.emplace_back();
+                                activeSounds.back().setBuffer(explosionBuffer);
+                                activeSounds.back().setVolume(70);
+                                activeSounds.back().play();
+
+                                break; // Sai do loop após acertar um asteroide
+                            } else {
+                                i++; // Próximo asteroide se não houve colisão
                             }
-                            asteroids.erase(asteroids.begin() + i); 
-                            
-                            // Adicione este código após apagar o asteroide
-                            
-                            activeSounds.emplace_back();
-                            activeSounds.back().setBuffer(explosionBuffer);
-                            activeSounds.back().setVolume(70);
-                            activeSounds.back().play();
-                            break;
+                        }
+                    }
+                    
+                    // Colisão nave-asteroide para Player 2
+                    for (const auto& asteroid : asteroids) {
+                        sf::Vector2f diff = player2.position - asteroid.getPosition();
+                        float distance = std::sqrt(diff.x * diff.x + diff.y * diff.y);
+                        if (distance < asteroid.getRadius() + 20) { 
+                            player2.isAlive = false; 
+                            break; 
                         }
                     }
                 }
-                // Colisão nave-asteroide para Player 2
-                for (const auto& asteroid : asteroids) {
-                    sf::Vector2f diff = player2.position - asteroid.getPosition();
-                    float distance = std::sqrt(diff.x * diff.x + diff.y * diff.y);
-                    if (distance < asteroid.getRadius() + 20) { player2.isAlive = false; break; }
-                }
-            }
-            // --- Fim das Colisões ---
+                // --- Fim das Colisões ---
 
-            // A classe Game verifica o estado geral:
-            // game.checkGameOver é chamado para ver se QUALQUER um dos players morreu
-            game.checkGameOver(player1.isAlive, player2.isAlive); 
+                // A classe Game verifica o estado geral:
+                // game.checkGameOver é chamado para ver se QUALQUER um dos players morreu
+                game.checkGameOver(player1.isAlive, player2.isAlive); 
 
-            scoreText1.setString("P1: " + std::to_string(score1));
-            scoreText2.setString("P2: " + std::to_string(score2));
+                scoreText1.setString("P1: " + std::to_string(score1));
+                scoreText2.setString("P2: " + std::to_string(score2));
+
         } // Fim do 'if (!game.isGameOver())' para updates de jogo
+    }// Fim do while (window.pollEvent(event))
 
-        // --- Renderização ---
+        // Renderização
         window.clear();
 
         window.draw(divider);
 
         // Desenha asteroides, balas, naves se estiverem ativas
-        for (const auto& asteroid : asteroids) { window.draw(asteroid.shape); }
+        drawExplosionAnimation();
+        for (const auto& asteroid : asteroids) { 
+            asteroid.draw(window); 
+        }
 
         // Naves só são desenhadas se estiverem vivas
         if (player1.isAlive) window.draw(player1.shape);
@@ -453,8 +554,7 @@ int main() {
             window.draw(restartText);  // Mensagem central "PRESS 'R' TO RESTART"
         }
 
-        window.display();
-    }
-
+                window.display();
+        } // Fim do while (window.isOpen())
     return 0;
 }
