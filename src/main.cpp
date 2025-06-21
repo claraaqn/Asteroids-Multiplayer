@@ -12,6 +12,7 @@
 #include "Asteroid.h"
 #include "Game.h"
 #include "GameConstants.h"
+#include "Starfield.h"
 
 using namespace GameConstants; 
 
@@ -20,6 +21,7 @@ using namespace GameConstants;
 int main() {
 
     srand(static_cast<unsigned int>(time(NULL)));
+
 
     // Verifica se há joysticks conectados
     if (sf::Joystick::isConnected(0)) {
@@ -32,37 +34,37 @@ int main() {
     srand(static_cast<unsigned int>(time(NULL)));
     
     sf::VideoMode desktopMode = sf::VideoMode::getDesktopMode();
-    // Use sf::Style::None para tela cheia sem bordas
     sf::RenderWindow window(sf::VideoMode(desktopMode.width, desktopMode.height), "Asteroids Multiplayer", sf::Style::None); 
+    
     window.setFramerateLimit(60);
     window.setPosition(sf::Vector2i(0, 0)); 
-    window.setMouseCursorVisible(false); // Opcional, esconde o cursor
+    window.setMouseCursorVisible(false); 
 
-    // --- CONFIGURAÇÃO DA sf::View PARA PREENCHER A TELA (STRETCH TO FILL) ---
-    sf::View gameView(sf::FloatRect(0, 0, WIDTH, HEIGHT)); // Sua resolução de jogo "virtual"
-    gameView.setViewport(sf::FloatRect(0.0f, 0.0f, 1.0f, 1.0f)); // Ocupa 100% da janela
+    sf::View gameView(sf::FloatRect(0, 0, WIDTH, HEIGHT)); 
+    gameView.setViewport(sf::FloatRect(0.0f, 0.0f, 1.0f, 1.0f)); 
     window.setView(gameView);
-    
+    sf::Clock clock;
     sf::Font font;
-    if (!font.loadFromFile("PixelifySans-Regular.ttf")) { // Certifique-se que arial.ttf está na pasta do executável
+    if (!font.loadFromFile("C:/Users/USUARIO-PC/Documents/Asteroids/Asteroids-Multiplayer/assets/font/PixelifySans-Regular.ttf")) { // Certifique-se que arial.ttf está na pasta do executável
+        std::cerr << "Arquivo de fonte não encontrado!" << std::endl;
         return EXIT_FAILURE;
     }
 
     // --- CARREGAMENTO DE EFEITOS SONOROS ---
     sf::SoundBuffer shootBuffer;
-    if (!shootBuffer.loadFromFile("assets/laser1.wav")) {
-        // Handle error: could not load audio file
+    if (!shootBuffer.loadFromFile("assets/sound/laser1.wav")) {
+        std::cerr << "Erro ao carregar som de tiro!" << std::endl;
         return EXIT_FAILURE;
     }
 
     sf::SoundBuffer explosionBuffer;
-    if (!explosionBuffer.loadFromFile("assets/explosion.wav")) {
-        // Handle error: could not load audio file
+    if (!explosionBuffer.loadFromFile("assets/sound/explosion.wav")) {
+        std::cerr << "Erro ao carregar som de explosão!" << std::endl;
         return EXIT_FAILURE;
     }
 
-    // --- TEXTO DE GAME OVER ÚNICO (APARECE QUANDO QUALQUER UM MORRE) ---
-    sf::Text gameOverText; // Texto centralizado de Game Over
+    //Texto do jogo
+    sf::Text gameOverText;
     gameOverText.setFont(font);
     gameOverText.setString("GAME OVER!");
     gameOverText.setCharacterSize(60); 
@@ -81,6 +83,7 @@ int main() {
     // --- FIM DOS TEXTOS DE GAME OVER ---
 
     Game game; // Instância do gerenciador de estado do jogo
+    Starfield starfield(200, WIDTH, HEIGHT);
 
     sf::RectangleShape divider(sf::Vector2f(2, HEIGHT));
     divider.setFillColor(sf::Color::White);
@@ -118,6 +121,14 @@ int main() {
     int score2 = 0;
 
     while (window.isOpen()) {
+        // --- Renderização ---
+        window.clear(sf::Color::Black);  // Limpa a tela uma única vez
+        float deltaTime = clock.restart().asSeconds();
+        // Desenha o fundo estrelado primeiro
+        starfield.draw(window);
+
+        // Desenha o divisor
+        window.draw(divider);
         activeSounds.erase(std::remove_if(activeSounds.begin(), activeSounds.end(), 
                                       [](const sf::Sound& s){ return s.getStatus() == sf::Sound::Stopped; }), 
                        activeSounds.end());
@@ -135,7 +146,7 @@ int main() {
 
             // --- Lógica de Reinício do Jogo (ativada se o jogo está em GAME_OVER) ---
             if (game.isGameOver() && (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::R) || 
-    (event.type == sf::Event::JoystickButtonPressed && event.joystickButton.button == 7)) {
+            (event.type == sf::Event::JoystickButtonPressed && event.joystickButton.button == 7)) {
                 if (event.key.code == sf::Keyboard::R) {
                     game.reset(); 
 
@@ -373,9 +384,9 @@ int main() {
             scoreText2.setString("P2: " + std::to_string(score2));
         } // Fim do 'if (!game.isGameOver())' para updates de jogo
 
-        // --- Renderização ---
-        window.clear();
-
+        starfield.update(deltaTime);
+        window.clear(sf::Color::Black);
+        starfield.draw(window);
         window.draw(divider);
 
         // Desenha asteroides, balas, naves se estiverem ativas
@@ -391,16 +402,17 @@ int main() {
 
         window.draw(scoreText1);
         window.draw(scoreText2);
+        
 
         // --- Desenha mensagens de Game Over INDIVIDUALMENTE ---
     
-
+        
         // --- Desenha o texto de reinício GLOBAL se o jogo estiver em GAME_OVER ---
         if (game.isGameOver()) { // game.isGameOver() é TRUE se QUALQUER jogador morreu
             window.draw(gameOverText); // Mensagem central "GAME OVER!"
             window.draw(restartText);  // Mensagem central "PRESS 'R' TO RESTART"
         }
-
+        
         window.display();
     }
 
