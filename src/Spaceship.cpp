@@ -12,13 +12,15 @@ Spaceship::Spaceship(sf::Vector2f startPos, float startAngle, bool player1) {
 
     shape.setPointCount(7);
 
-    shape.setPoint(0, sf::Vector2f(0, -15));    // Ponta da nave (agora para cima)
-    shape.setPoint(1, sf::Vector2f(-10, 10));   // Asa inferior traseira
-    shape.setPoint(2, sf::Vector2f(-5, 5));     // Curva inferior
-    shape.setPoint(3, sf::Vector2f(0, 10));     // Centro traseiro
-    shape.setPoint(4, sf::Vector2f(5, 5));      // Curva superior
-    shape.setPoint(5, sf::Vector2f(10, 10));    // Asa superior traseira
-    shape.setPoint(6, sf::Vector2f(0, -15));    // Fecha o polígono
+    //!Redimensionei para 30% menor
+    shape.setPoint(0, sf::Vector2f(0 * 0.7f, -15 * 0.7f));    // Ponta da nave
+    shape.setPoint(1, sf::Vector2f(-10 * 0.7f, 10 * 0.7f));   // Asa inferior
+    shape.setPoint(2, sf::Vector2f(-5 * 0.7f, 5 * 0.7f));     // Curva inferior
+    shape.setPoint(3, sf::Vector2f(0 * 0.7f, 10 * 0.7f));     // Centro traseiro
+    shape.setPoint(4, sf::Vector2f(5 * 0.7f, 5 * 0.7f));      // Curva superior
+    shape.setPoint(5, sf::Vector2f(10 * 0.7f, 10 * 0.7f));    // Asa superior
+    shape.setPoint(6, sf::Vector2f(0 * 0.7f, -15 * 0.7f));    // Fecha o polígono
+
 
     shape.setFillColor(sf::Color::Transparent);
     shape.setOutlineThickness(2);
