@@ -1,9 +1,9 @@
 #include <SFML/Graphics.hpp>
 #include <vector>
 #include <cmath>
-#include <string>    // Para std::to_string
-#include <cstdlib>   // Para rand(), srand()
-#include <ctime>     // Para time()
+#include <string>    
+#include <cstdlib>   
+#include <ctime>     
 #include <SFML/Audio.hpp>
 #include <iostream>
 
@@ -23,6 +23,17 @@ int main() {
     srand(static_cast<unsigned int>(time(NULL)));
     sf::Listener::setGlobalVolume(100);
 
+    //? para os asteroides
+    sf::Clock gameTimeClock;  // Relógio para medir o tempo total de jogo
+    float baseAsteroidSpeed = 50.0f;
+    float maxAsteroidSpeed = 300.0f;
+    float speedIncreaseRate = 0.4f;  
+
+    float baseSpawnInterval = 1.2f;  
+    float minSpawnInterval = 0.6f; // baixa par fircar mais dificil
+    float spawnAcceleration = 0.005f; // aumenta pra ficar mais dificil 
+    int baseAsteroidsPerSpawn = 1;
+    int maxAsteroidsPerSpawn = 4; 
 
     //? Verifica se há joysticks conectados
     if (sf::Joystick::isConnected(0)) {
@@ -392,23 +403,46 @@ int main() {
                 for (auto& asteroid : asteroids) asteroid.update(deltaTime, currentTime);
 
                 //! SPAWN DE NOVOS ASTEROIDES
-                if (asteroidClock.getElapsedTime().asSeconds() > 1.5f) {
-                    static bool spawnLeft = true;  
+                float currentGameTime = gameTimeClock.getElapsedTime().asSeconds();
+
+                // Calcula o intervalo atual de spawn (diminui com o tempo)
+                float currentSpawnInterval = std::max(
+                    baseSpawnInterval - (currentGameTime * spawnAcceleration),
+                    minSpawnInterval
+                );
+
+                // Calcula quantos asteroides spawnar neste momento (aumenta com o tempo)
+                int asteroidsToSpawn = std::min(
+                    baseAsteroidsPerSpawn + static_cast<int>(currentGameTime / 30), // +1 a cada 30 segundos
+                    maxAsteroidsPerSpawn
+                );
+
+                if (asteroidClock.getElapsedTime().asSeconds() > currentSpawnInterval) {
+                    static bool spawnLeft = true;
                     
-                    float x;
-                    if (spawnLeft) {
-                        x = rand() % (WIDTH / 3);  
-                    } else {
-                        x = (WIDTH * 2 / 3) + rand() % (WIDTH / 3);  
+                    // Calcula a velocidade atual
+                    float currentSpeed = std::min(
+                        baseAsteroidSpeed + (currentGameTime * speedIncreaseRate),
+                        maxAsteroidSpeed
+                    );
+
+                    for (int i = 0; i < asteroidsToSpawn; i++) {
+                        float x;
+                        if (spawnLeft) {
+                            x = rand() % (WIDTH / 3);  
+                        } else {
+                            x = (WIDTH * 2 / 3) + rand() % (WIDTH / 3);  
+                        }
+                        spawnLeft = !spawnLeft;
+                        
+                        float y = -50 - (i * 30); // Pequeno deslocamento vertical para múltiplos asteroides
+                        float vx = (rand() % 100) / 100.0f - 0.5f;
+                        float vy = currentSpeed + (rand() % 30) / 10.0f;
+                        
+                        int size = (rand() % 2) + 2; // Tamanho 2 ou 3
+                        asteroids.emplace_back(sf::Vector2f(x, y), sf::Vector2f(vx, vy), size);
                     }
-                    spawnLeft = !spawnLeft;  
                     
-                    float y = -50;
-                    float vx = (rand() % 100) / 100.0f - 0.5f;
-                    float vy = 30.0f + (rand() % 100) / 15.0f;  // Entre 30.0 e ~36.5
-                    
-                    int size = (rand() % 2) + 2; 
-                    asteroids.emplace_back(sf::Vector2f(x, y), sf::Vector2f(vx, vy), size);
                     asteroidClock.restart();
                 }
 
