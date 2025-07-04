@@ -7,6 +7,7 @@
 #include <SFML/Audio.hpp>
 #include <iostream>
 
+#include "Menu.h"
 #include "Spaceship.h"
 #include "Bullet.h"
 #include "Asteroid.h"
@@ -23,7 +24,7 @@ int main() {
     srand(static_cast<unsigned int>(time(NULL)));
 
 
-    // Verifica se há joysticks conectados
+    //? Verifica se há joysticks conectados
     if (sf::Joystick::isConnected(0)) {
         std::cout << "Joystick 0 conectado!" << std::endl;
     }
@@ -49,6 +50,30 @@ int main() {
         std::cerr << "Arquivo de fonte não encontrado!" << std::endl;
         return EXIT_FAILURE;
     }
+    
+    //? --- TELA INICIAL ---
+    Menu menu(window, font);
+    bool inMenu = true;
+    
+    while (inMenu && window.isOpen()) {
+        sf::Event event;
+        while (window.pollEvent(event)) {
+            if (event.type == sf::Event::Closed) {
+                window.close();
+            }
+            
+            if (menu.handleInput(event)) {
+                inMenu = false;
+            }
+        }
+        
+        menu.draw();
+    }
+    
+    if (!window.isOpen()) {
+        return 0; // Sai se o usuário fechou a janela no menu
+    }
+    window.setView(gameView);
 
     // --- CARREGAMENTO DE EFEITOS SONOROS ---
     sf::SoundBuffer shootBuffer;
