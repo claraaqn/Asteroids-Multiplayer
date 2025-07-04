@@ -33,20 +33,20 @@ std::uniform_real_distribution<float> rotation_speed_distrib(0.1f, 1.5f); // Var
 
 // Construtor do Asteroid
 Asteroid::Asteroid(sf::Vector2f pos, sf::Vector2f vel, int sz) :
-    position(pos),
-    velocity(vel),
-    size(sz),
-    radius(0.0f) // Inicializa o raio
-{
+     shape(),       
+    velocity(vel), 
+    size(sz),      
+    position(pos),  
+    radius(size * 10.0f)
+{   
+    int numVertices = num_vertices_distrib(gen);
+    shape.setPointCount(numVertices);
+    
     this->position.y = -50; 
     this->velocity.x = 0;   
     
     // Calcula o raio base do asteroide (ajuste o fator 20.0f se quiser asteroides maiores/menores no geral)
     float baseRadius = (float)this->size * 20.0f; 
-
-    // Define o número de vértices para este asteroide específico
-    int numVertices = num_vertices_distrib(gen);
-    shape.setPointCount(numVertices);
 
     float currentMaxRadius = 0.0f; 
 

@@ -170,7 +170,7 @@ int main() {
             }
 
             // --- Lógica de Reinício do Jogo (ativada se o jogo está em GAME_OVER) ---
-            if (game.isGameOver() && (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::R) || 
+            if ((game.isGameOver() && (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::R)) || 
             (event.type == sf::Event::JoystickButtonPressed && event.joystickButton.button == 7)) {
                 if (event.key.code == sf::Keyboard::R) {
                     game.reset(); 
