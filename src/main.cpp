@@ -47,7 +47,7 @@ int main() {
     window.setView(gameView);
     sf::Clock clock;
     sf::Font font;
-    if (!font.loadFromFile("C:/Users/USUARIO-PC/Documents/Asteroids/Asteroids-Multiplayer/assets/font/PixelifySans-Regular.ttf")) { // Certifique-se que arial.ttf está na pasta do executável
+    if (!font.loadFromFile("assets\\font\\PixelifySans-Regular.ttf")) {
         std::cerr << "Arquivo de fonte não encontrado!" << std::endl;
         return EXIT_FAILURE;
     }
@@ -307,10 +307,10 @@ int main() {
                     float joystickY = sf::Joystick::getAxisPosition(0, sf::Joystick::Y);
                     
                     // Deadzone de 15% - precisa mover o joystick além de 15% de sua amplitude total para que o movimento seja detectado
-                    if (std::abs(joystickX) > 15.0f || std::abs(joystickY) > 15.0f) {
+                    if (std::abs(joystickX) > 25.0f || std::abs(joystickY) > 25.0f) {
                         // Normaliza os valores do joystick
-                        float normX = joystickX / 100.0f;
-                        float normY = -joystickY / 100.0f; //* Invertido porque em SFML, Y cresce para baixo
+                        float normX = (joystickX / 100.0f) * 0.7f;
+                        float normY = (-joystickY / 100.0f) * 0.7f; //* Invertido porque em SFML, Y cresce para baixo
                         
                         // Calcula a direção do movimento baseado no ângulo da nave
                         float radAngle = player1.angle * (3.14159265f / 180.0f); // Converte para radianos
@@ -352,9 +352,9 @@ int main() {
                 float joystickX = sf::Joystick::getAxisPosition(1, sf::Joystick::X);
                 float joystickY = sf::Joystick::getAxisPosition(1, sf::Joystick::Y);
                 
-                if (std::abs(joystickX) > 15.0f || std::abs(joystickY) > 15.0f) {
-                    float normX = joystickX / 100.0f;
-                    float normY = -joystickY / 100.0f;
+                if (std::abs(joystickX) > 25.0f || std::abs(joystickY) > 25.0f) {
+                    float normX = (joystickX / 100.0f) * 0.7f;
+                    float normY = (-joystickY / 100.0f) * 0.7f;
                     
                     float radAngle = player2.angle * (3.14159265f / 180.0f);
                     
