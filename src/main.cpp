@@ -7,6 +7,7 @@
 #include <SFML/Audio.hpp>
 #include <iostream>
 
+#include "Menu.h"
 #include "Spaceship.h"
 #include "Bullet.h"
 #include "Asteroid.h"
@@ -23,7 +24,7 @@ int main() {
     sf::Listener::setGlobalVolume(100);
 
 
-    // Verifica se há joysticks conectados
+    //? Verifica se há joysticks conectados
     if (sf::Joystick::isConnected(0)) {
         std::cout << "Joystick 0 conectado!" << std::endl;
     }
@@ -50,6 +51,30 @@ int main() {
         std::cerr << "Arquivo de fonte não encontrado!" << std::endl;
         return EXIT_FAILURE;
     }
+    
+    //? --- TELA INICIAL ---
+    Menu menu(window, font);
+    bool inMenu = true;
+    
+    while (inMenu && window.isOpen()) {
+        sf::Event event;
+        while (window.pollEvent(event)) {
+            if (event.type == sf::Event::Closed) {
+                window.close();
+            }
+            
+            if (menu.handleInput(event)) {
+                inMenu = false;
+            }
+        }
+        
+        menu.draw();
+    }
+    
+    if (!window.isOpen()) {
+        return 0; // Sai se o usuário fechou a janela no menu
+    }
+    window.setView(gameView);
 
     // --- CARREGAMENTO DE EFEITOS SONOROS ---
     sf::SoundBuffer shootBuffer;
@@ -152,7 +177,7 @@ int main() {
     while (window.isOpen()) {
         // --- Renderização ---
         window.clear(sf::Color::Black);  // Limpa a tela uma única vez
-        float deltaTime = clock.restart().asSeconds();
+        
         // Desenha o fundo estrelado primeiro
         starfield.draw(window);
 
@@ -191,11 +216,9 @@ int main() {
                 std::cout << "Joystick " << event.joystickConnect.joystickId << " desconectado!" << std::endl;
             }
 
-
-            //todo --- Lógica de Reinício do Jogo (ativada se o jogo está em GAME_OVER) ---
-            if (game.isGameOver() && ((event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::R) || 
-                         (event.type == sf::Event::JoystickButtonPressed && event.joystickButton.button == 7))) {
-
+            // --- Lógica de Reinício do Jogo (ativada se o jogo está em GAME_OVER) ---
+            if ((game.isGameOver() && (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::R)) || 
+            (event.type == sf::Event::JoystickButtonPressed && event.joystickButton.button == 7)) {
                 if (event.key.code == sf::Keyboard::R) {
                     game.reset(); 
 

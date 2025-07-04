@@ -1,62 +1,64 @@
 #include "Starfield.h"
-#include <cstdlib>
-#include <ctime>
 #include <cmath>
 
-Starfield::Starfield(int count, int w, int h) : width(w), height(h) {
-    std::srand(static_cast<unsigned>(std::time(nullptr)));
+// Inicializamos os membros no construtor
+Starfield::Starfield(unsigned int count, unsigned int w, unsigned int h) 
+    : width(w), height(h), gen(rd()), dist(0.0f, 1.0f) {
     
-    for (int i = 0; i < count; ++i) {
+    std::uniform_int_distribution<int> bright_dist(200, 255);
+    std::uniform_int_distribution<int> alpha_dist(100, 255);
+
+    stars.reserve(count);
+
+    for (unsigned int i = 0; i < count; ++i) {
         Star star;
-        // Cria um quadrado pequeno (tamanho entre 1x1 e 3x3 pixels)
-        float size = static_cast<float>(rand() % 3 + 1);
+        
+        float size = std::round(dist(gen) * 2.0f + 1.0f);
         star.shape.setSize(sf::Vector2f(size, size));
         
-        // Posição aleatória
         star.shape.setPosition(
-            static_cast<float>(rand() % width),
-            static_cast<float>(rand() % height)
+            dist(gen) * static_cast<float>(width),
+            dist(gen) * static_cast<float>(height)
         );
 
+        int brightness = bright_dist(gen);
+        sf::Uint8 alpha = static_cast<sf::Uint8>(alpha_dist(gen));
+        star.shape.setFillColor(sf::Color(brightness, brightness, brightness, alpha));
         
-        int brightness = rand() % 55 + 200; // Estrelas mais brilhantes (200-255)
-       
+        star.speed = dist(gen) * 0.4f + 0.1f;
+        star.scale = dist(gen);
         
-        // Cor com transparência aleatória
-        star.shape.setFillColor(sf::Color(
-            255, 255, 255, 
-            static_cast<sf::Uint8>(rand() % 155 + 100)  // Alpha entre 100-255
-        ));
-        
-        // Velocidade aleatória
-        star.speed = static_cast<float>(rand() % 5 + 1) / 10.0f; // 0.1-0.5
-        star.scale = static_cast<float>(rand() % 100) / 100.0f;
         stars.push_back(star);
     }
 }
 
 void Starfield::update(float deltaTime) {
+    const float pi = 3.14159265358979323846f;
+    const float movementFactor = 50.0f;
+    
+    // Criamos distribuições locais quando necessário
+    std::uniform_int_distribution<int> pos_dist(0, width);
+    std::uniform_int_distribution<int> height_dist(0, 50);
+
     for (auto& star : stars) {
-        // Movimento em direção aleatória (com tendência para baixo)
-        float angle = (star.scale * 0.5f) * 3.14159f; // Variação de ângulo
-        float moveX = std::cos(angle) * star.speed * deltaTime;
-        float moveY = (1.0f + std::sin(angle)) * star.speed * deltaTime;
+        float angle = star.scale * pi;
+        float moveX = std::cos(angle) * star.speed * deltaTime * movementFactor;
+        float moveY = (1.0f + std::sin(angle * 0.5f)) * star.speed * deltaTime * movementFactor;
         
         star.shape.move(moveX, moveY);
         
-        // Se sair da tela, reposiciona
-        sf::Vector2f pos = star.shape.getPosition();
-        if (pos.x < -10 || pos.x > width + 10 || pos.y > height + 10) {
+        auto pos = star.shape.getPosition();
+        if (pos.x < -20.0f || pos.x > width + 20.0f || pos.y > height + 20.0f) {
             star.shape.setPosition(
-                static_cast<float>(rand() % width),
-                static_cast<float>(-rand() % 50) // Aparece acima da tela
+                static_cast<float>(pos_dist(gen)),
+                -static_cast<float>(height_dist(gen))
             );
         }
     }
 }
 
-void Starfield::draw(sf::RenderWindow& window) {
-    for (auto& star : stars) {
+void Starfield::draw(sf::RenderWindow& window) const {
+    for (const auto& star : stars) {
         window.draw(star.shape);
     }
 }
