@@ -1,5 +1,4 @@
 #pragma once
-#pragma once
 #include <SFML/Graphics.hpp>
 
 class Asteroid {
@@ -14,7 +13,6 @@ private:
     float scale;
     float targetScale;
     float rotationSpeed;
-    
     sf::ConvexShape shape;
     
 public:
