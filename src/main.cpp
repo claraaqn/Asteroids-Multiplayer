@@ -7,6 +7,8 @@
 #include <SFML/Audio.hpp>
 #include <iostream>
 
+#include "GameOverScreen.h"
+#include "PerformanceTracker.h"
 #include "Menu.h"
 #include "Spaceship.h"
 #include "Bullet.h"
@@ -22,63 +24,6 @@
 #include <iomanip>
 
 using namespace GameConstants; 
-
-// Classe para medição de performance
-class PerformanceTracker {
-private:
-    std::chrono::high_resolution_clock::time_point lastPrint;
-    std::chrono::high_resolution_clock::time_point frameStart;
-    int frameCount = 0;
-    float minFrameTime = 9999.0f;
-    float maxFrameTime = 0.0f;
-    float totalFrameTime = 0.0f;
-    
-public:
-    PerformanceTracker() : lastPrint(std::chrono::high_resolution_clock::now()) {}
-    
-    void startFrame() {
-        frameStart = std::chrono::high_resolution_clock::now();
-    }
-    
-    void endFrame() {
-        auto frameEnd = std::chrono::high_resolution_clock::now();
-        float frameTime = std::chrono::duration_cast<std::chrono::microseconds>(frameEnd - frameStart).count() / 1000.0f;
-        
-        // Atualiza estatísticas
-        frameCount++;
-        totalFrameTime += frameTime;
-        if (frameTime < minFrameTime) minFrameTime = frameTime;
-        if (frameTime > maxFrameTime) maxFrameTime = frameTime;
-        
-        // Verifica se é hora de imprimir (a cada 1 segundo)
-        auto currentTime = std::chrono::high_resolution_clock::now();
-        if (std::chrono::duration_cast<std::chrono::seconds>(currentTime - lastPrint).count() >= 1) {
-            printStats();
-            resetStats();
-            lastPrint = currentTime;
-        }
-    }
-    
-    void printStats() {
-        float avgFrameTime = totalFrameTime / frameCount;
-        float fps = 1000.0f / avgFrameTime;
-        
-        std::cout << "\n--- Performance Stats ---\n";
-        std::cout << "FPS: " << std::fixed << std::setprecision(1) << fps << "\n";
-        std::cout << "Frame Time (ms): Avg=" << std::setprecision(3) << avgFrameTime 
-                  << " Min=" << minFrameTime 
-                  << " Max=" << maxFrameTime << "\n";
-        std::cout << "Frames analisados: " << frameCount << "\n";
-        std::cout << "------------------------\n";
-    }
-    
-    void resetStats() {
-        frameCount = 0;
-        totalFrameTime = 0.0f;
-        minFrameTime = 9999.0f;
-        maxFrameTime = 0.0f;
-    }
-};
 
 int main() {
 
@@ -142,6 +87,9 @@ int main() {
     Menu menu(window, font);
     bool inMenu = true;
     
+    //? Tela de Game_Over
+    GameOverScreen gameOverScreen(font);
+    
     while (inMenu && window.isOpen()) {
 
         perfTracker.startFrame();
@@ -177,25 +125,7 @@ int main() {
         std::cerr << "Erro ao carregar som de explosão!" << std::endl;
         return EXIT_FAILURE;
     }
-
-    //Texto do jogo
-    sf::Text gameOverText;
-    gameOverText.setFont(font);
-    gameOverText.setString("GAME OVER!");
-    gameOverText.setCharacterSize(60); 
-    gameOverText.setFillColor(sf::Color::White); 
-    gameOverText.setOrigin(gameOverText.getLocalBounds().width/2, gameOverText.getLocalBounds().height/2);
-    gameOverText.setPosition(WIDTH/2, HEIGHT/2 - 50);
-
-    // --- TEXTO DE REINÍCIO GLOBAL (APARECE JUNTO COM O GAME OVER) ---
-    sf::Text restartText; 
-    restartText.setFont(font);
-    restartText.setString("PRESS 'R' TO RESTART");
-    restartText.setCharacterSize(30);
-    restartText.setFillColor(sf::Color::White);
-    restartText.setOrigin(restartText.getLocalBounds().width/2, restartText.getLocalBounds().height/2);
-    restartText.setPosition(WIDTH/2, HEIGHT/2 + 50); 
-    // --- FIM DOS TEXTOS DE GAME OVER ---
+    
 
     Game game; // Instância do gerenciador de estado do jogo
     Starfield starfield(200, WIDTH, HEIGHT);
@@ -264,6 +194,8 @@ int main() {
     int score2 = 0;
 
     while (window.isOpen()) {
+
+        game.checkGameOver(player1.isAlive, player2.isAlive, score1, score2);
         // --- Renderização ---
         window.clear(sf::Color::Black);  // Limpa a tela uma única vez
         
@@ -663,7 +595,6 @@ int main() {
 
                 // A classe Game verifica o estado geral:
                 // game.checkGameOver é chamado para ver se QUALQUER um dos players morreu
-                game.checkGameOver(player1.isAlive, player2.isAlive); 
 
                 scoreText1.setString("P1: " + std::to_string(score1));
                 scoreText2.setString("P2: " + std::to_string(score2));
@@ -699,10 +630,47 @@ int main() {
     
         
         // --- Desenha o texto de reinício GLOBAL se o jogo estiver em GAME_OVER ---
-        if (game.isGameOver()) { // game.isGameOver() é TRUE se QUALQUER jogador morreu
-            window.draw(gameOverText); // Mensagem central "GAME OVER!"
-            window.draw(restartText);  // Mensagem central "PRESS 'R' TO RESTART"
+       if (game.isGameOver()) {
+    
+        static bool updated = false;
+    if (!updated) {
+        gameOverScreen.update(game.getWinner(), score1, score2);
+        gameOverScreen.setPosition(WIDTH/2, HEIGHT/2);
+        updated = true;
+    }
+    
+    gameOverScreen.draw(window);
+    
+    sf::Event event;
+    while (window.pollEvent(event)) {
+        if (event.type == sf::Event::Closed) {
+            window.close();
         }
+        else if (event.type == sf::Event::KeyPressed) {
+            if (event.key.code == sf::Keyboard::R) {  // Reiniciar
+                game.reset();
+                // Reinicialização dos objetos do jogo...
+                updated = false;
+                break;
+            }
+            else if (event.key.code == sf::Keyboard::Q) {  // Sair
+                window.close();
+                return 0;  // Sai imediatamente do jogo
+            }
+        }
+        // Mantenha também o suporte a joystick se desejar
+        else if (event.type == sf::Event::JoystickButtonPressed && 
+                 event.joystickButton.button == 7) {
+            game.reset();
+            // Reinicialização...
+            updated = false;
+            break;
+        }
+    }
+    
+    window.display();
+    continue;
+}
         perfTracker.endFrame();
 
         window.display();

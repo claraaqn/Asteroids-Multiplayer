@@ -1,16 +1,18 @@
 #pragma once
-#include <SFML/Graphics.hpp>
 
 class Game {
 public:
-    enum State { PLAYING, GAME_OVER };
+    enum GameState { PLAYING, GAME_OVER };
     
-    State currentState;
-    int player1Score;
-    int player2Score;
-
     Game();
     void reset();
     bool isGameOver() const;
-    void checkGameOver(bool player1Alive, bool player2Alive);
+    void checkGameOver(bool player1Alive, bool player2Alive, int score1, int score2);
+    int getWinner() const ;
+    
+private:
+    GameState currentState;
+    int player1Score;
+    int player2Score;
+    int winner; 
 };
