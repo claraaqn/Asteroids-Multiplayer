@@ -1,9 +1,9 @@
 #include <SFML/Graphics.hpp>
 #include <vector>
 #include <cmath>
-#include <string>    // Para std::to_string
-#include <cstdlib>   // Para rand(), srand()
-#include <ctime>     // Para time()
+#include <string>    
+#include <cstdlib>   
+#include <ctime>     
 #include <SFML/Audio.hpp>
 #include <iostream>
 
@@ -16,13 +16,99 @@
 #include "Starfield.h"
 #include "AsteroidExplosion.h"
 
+// para avaliar o código
+#include <chrono>
+#include <sstream>
+#include <iomanip>
+
 using namespace GameConstants; 
 
+// Classe para medição de performance
+class PerformanceTracker {
+private:
+    std::chrono::high_resolution_clock::time_point lastPrint;
+    std::chrono::high_resolution_clock::time_point frameStart;
+    int frameCount = 0;
+    float minFrameTime = 9999.0f;
+    float maxFrameTime = 0.0f;
+    float totalFrameTime = 0.0f;
+    
+public:
+    PerformanceTracker() : lastPrint(std::chrono::high_resolution_clock::now()) {}
+    
+    void startFrame() {
+        frameStart = std::chrono::high_resolution_clock::now();
+    }
+    
+    void endFrame() {
+        auto frameEnd = std::chrono::high_resolution_clock::now();
+        float frameTime = std::chrono::duration_cast<std::chrono::microseconds>(frameEnd - frameStart).count() / 1000.0f;
+        
+        // Atualiza estatísticas
+        frameCount++;
+        totalFrameTime += frameTime;
+        if (frameTime < minFrameTime) minFrameTime = frameTime;
+        if (frameTime > maxFrameTime) maxFrameTime = frameTime;
+        
+        // Verifica se é hora de imprimir (a cada 1 segundo)
+        auto currentTime = std::chrono::high_resolution_clock::now();
+        if (std::chrono::duration_cast<std::chrono::seconds>(currentTime - lastPrint).count() >= 1) {
+            printStats();
+            resetStats();
+            lastPrint = currentTime;
+        }
+    }
+    
+    void printStats() {
+        float avgFrameTime = totalFrameTime / frameCount;
+        float fps = 1000.0f / avgFrameTime;
+        
+        std::cout << "\n--- Performance Stats ---\n";
+        std::cout << "FPS: " << std::fixed << std::setprecision(1) << fps << "\n";
+        std::cout << "Frame Time (ms): Avg=" << std::setprecision(3) << avgFrameTime 
+                  << " Min=" << minFrameTime 
+                  << " Max=" << maxFrameTime << "\n";
+        std::cout << "Frames analisados: " << frameCount << "\n";
+        std::cout << "------------------------\n";
+    }
+    
+    void resetStats() {
+        frameCount = 0;
+        totalFrameTime = 0.0f;
+        minFrameTime = 9999.0f;
+        maxFrameTime = 0.0f;
+    }
+};
+
 int main() {
+
+    // Variáveis para tracking de performance
+    std::chrono::high_resolution_clock::time_point frameStart;
+    float frameTime = 0.0f;
+    float fps = 0.0f;
+    int frameCount = 0;
+    sf::Text fpsText;
+    sf::Text frameTimeText;
+    std::vector<float> frameTimesHistory;  // Para armazenar histórico de tempos de frame
+    const size_t MAX_HISTORY = 300;       // Quantos frames manter no histórico
+
+    PerformanceTracker perfTracker;
+
 
     srand(static_cast<unsigned int>(time(NULL)));
     sf::Listener::setGlobalVolume(100);
 
+    //? para os asteroides
+    sf::Clock gameTimeClock;  // Relógio para medir o tempo total de jogo
+    float baseAsteroidSpeed = 50.0f;
+    float maxAsteroidSpeed = 300.0f;
+    float speedIncreaseRate = 0.4f;  
+
+    float baseSpawnInterval = 1.2f;  
+    float minSpawnInterval = 0.6f; // baixa par fircar mais dificil
+    float spawnAcceleration = 0.005f; // aumenta pra ficar mais dificil 
+    int baseAsteroidsPerSpawn = 1;
+    int maxAsteroidsPerSpawn = 4; 
 
     //? Verifica se há joysticks conectados
     if (sf::Joystick::isConnected(0)) {
@@ -47,7 +133,7 @@ int main() {
     window.setView(gameView);
     sf::Clock clock;
     sf::Font font;
-    if (!font.loadFromFile("C:/Users/USUARIO-PC/Documents/Asteroids/Asteroids-Multiplayer/assets/font/PixelifySans-Regular.ttf")) { // Certifique-se que arial.ttf está na pasta do executável
+    if (!font.loadFromFile("assets\\font\\PixelifySans-Regular.ttf")) {
         std::cerr << "Arquivo de fonte não encontrado!" << std::endl;
         return EXIT_FAILURE;
     }
@@ -57,6 +143,9 @@ int main() {
     bool inMenu = true;
     
     while (inMenu && window.isOpen()) {
+
+        perfTracker.startFrame();
+
         sf::Event event;
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed) {
@@ -307,10 +396,10 @@ int main() {
                     float joystickY = sf::Joystick::getAxisPosition(0, sf::Joystick::Y);
                     
                     // Deadzone de 15% - precisa mover o joystick além de 15% de sua amplitude total para que o movimento seja detectado
-                    if (std::abs(joystickX) > 15.0f || std::abs(joystickY) > 15.0f) {
+                    if (std::abs(joystickX) > 25.0f || std::abs(joystickY) > 25.0f) {
                         // Normaliza os valores do joystick
-                        float normX = joystickX / 100.0f;
-                        float normY = -joystickY / 100.0f; //* Invertido porque em SFML, Y cresce para baixo
+                        float normX = (joystickX / 100.0f) * 0.7f;
+                        float normY = (-joystickY / 100.0f) * 0.7f; //* Invertido porque em SFML, Y cresce para baixo
                         
                         // Calcula a direção do movimento baseado no ângulo da nave
                         float radAngle = player1.angle * (3.14159265f / 180.0f); // Converte para radianos
@@ -352,9 +441,9 @@ int main() {
                 float joystickX = sf::Joystick::getAxisPosition(1, sf::Joystick::X);
                 float joystickY = sf::Joystick::getAxisPosition(1, sf::Joystick::Y);
                 
-                if (std::abs(joystickX) > 15.0f || std::abs(joystickY) > 15.0f) {
-                    float normX = joystickX / 100.0f;
-                    float normY = -joystickY / 100.0f;
+                if (std::abs(joystickX) > 25.0f || std::abs(joystickY) > 25.0f) {
+                    float normX = (joystickX / 100.0f) * 0.7f;
+                    float normY = (-joystickY / 100.0f) * 0.7f;
                     
                     float radAngle = player2.angle * (3.14159265f / 180.0f);
                     
@@ -392,23 +481,46 @@ int main() {
                 for (auto& asteroid : asteroids) asteroid.update(deltaTime, currentTime);
 
                 //! SPAWN DE NOVOS ASTEROIDES
-                if (asteroidClock.getElapsedTime().asSeconds() > 1.5f) {
-                    static bool spawnLeft = true;  
+                float currentGameTime = gameTimeClock.getElapsedTime().asSeconds();
+
+                // Calcula o intervalo atual de spawn (diminui com o tempo)
+                float currentSpawnInterval = std::max(
+                    baseSpawnInterval - (currentGameTime * spawnAcceleration),
+                    minSpawnInterval
+                );
+
+                // Calcula quantos asteroides spawnar neste momento (aumenta com o tempo)
+                int asteroidsToSpawn = std::min(
+                    baseAsteroidsPerSpawn + static_cast<int>(currentGameTime / 30), // +1 a cada 30 segundos
+                    maxAsteroidsPerSpawn
+                );
+
+                if (asteroidClock.getElapsedTime().asSeconds() > currentSpawnInterval) {
+                    static bool spawnLeft = true;
                     
-                    float x;
-                    if (spawnLeft) {
-                        x = rand() % (WIDTH / 3);  
-                    } else {
-                        x = (WIDTH * 2 / 3) + rand() % (WIDTH / 3);  
+                    // Calcula a velocidade atual
+                    float currentSpeed = std::min(
+                        baseAsteroidSpeed + (currentGameTime * speedIncreaseRate),
+                        maxAsteroidSpeed
+                    );
+
+                    for (int i = 0; i < asteroidsToSpawn; i++) {
+                        float x;
+                        if (spawnLeft) {
+                            x = rand() % (WIDTH / 3);  
+                        } else {
+                            x = (WIDTH * 2 / 3) + rand() % (WIDTH / 3);  
+                        }
+                        spawnLeft = !spawnLeft;
+                        
+                        float y = -50 - (i * 30); // Pequeno deslocamento vertical para múltiplos asteroides
+                        float vx = (rand() % 100) / 100.0f - 0.5f;
+                        float vy = currentSpeed + (rand() % 30) / 10.0f;
+                        
+                        int size = (rand() % 2) + 2; // Tamanho 2 ou 3
+                        asteroids.emplace_back(sf::Vector2f(x, y), sf::Vector2f(vx, vy), size);
                     }
-                    spawnLeft = !spawnLeft;  
                     
-                    float y = -50;
-                    float vx = (rand() % 100) / 100.0f - 0.5f;
-                    float vy = 30.0f + (rand() % 100) / 15.0f;  // Entre 30.0 e ~36.5
-                    
-                    int size = (rand() % 2) + 2; 
-                    asteroids.emplace_back(sf::Vector2f(x, y), sf::Vector2f(vx, vy), size);
                     asteroidClock.restart();
                 }
 
@@ -591,8 +703,9 @@ int main() {
             window.draw(gameOverText); // Mensagem central "GAME OVER!"
             window.draw(restartText);  // Mensagem central "PRESS 'R' TO RESTART"
         }
-        
-                window.display();
+        perfTracker.endFrame();
+
+        window.display();
         } // Fim do while (window.isOpen())
     return 0;
 }
