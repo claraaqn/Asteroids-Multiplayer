@@ -1,45 +1,36 @@
 #include "Spaceship.h" // Inclui a DECLARAÇÃO da classe Spaceship
 #include <cmath> // Para std::cos, std::sin
-
+#include <iostream>
 using namespace GameConstants;
 
 Spaceship::Spaceship(sf::Vector2f startPos, float startAngle, bool player1) {
     position = startPos;
-    angle = 0.0f;
+    angle = startAngle;
     velocity = sf::Vector2f(0, 0);
     isAlive = true;
     isPlayer1 = player1;
-
-    shape.setPointCount(7);
-
-    //!Redimensionei para 30% menor
-    shape.setPoint(0, sf::Vector2f(0 * 0.7f, -15 * 0.7f));    // Ponta da nave
-    shape.setPoint(1, sf::Vector2f(-10 * 0.7f, 10 * 0.7f));   // Asa inferior
-    shape.setPoint(2, sf::Vector2f(-5 * 0.7f, 5 * 0.7f));     // Curva inferior
-    shape.setPoint(3, sf::Vector2f(0 * 0.7f, 10 * 0.7f));     // Centro traseiro
-    shape.setPoint(4, sf::Vector2f(5 * 0.7f, 5 * 0.7f));      // Curva superior
-    shape.setPoint(5, sf::Vector2f(10 * 0.7f, 10 * 0.7f));    // Asa superior
-    shape.setPoint(6, sf::Vector2f(0 * 0.7f, -15 * 0.7f));    // Fecha o polígono
+    sf::FloatRect bounds = sprite.getLocalBounds();
 
 
-    shape.setFillColor(sf::Color::Transparent);
-    shape.setOutlineThickness(2);
-    shape.setPosition(position);
-    shape.setRotation(angle);
-    float sumX = 0;
-    float sumY = 0;
-    int count = shape.getPointCount();
-
-    for (int i = 0; i < count; i++) {
-        sf::Vector2f p = shape.getPoint(i);
-        sumX += p.x;
-        sumY += p.y;
+// Carrega a textura apropriada para cada jogador
+    if (isPlayer1) {
+        if (!texture.loadFromFile("assets/imgs/Nave.png")) {
+            std::cerr << "Erro ao carregar textura da nave do jogador 1!" << std::endl;
+        }
+    } else {
+        if (!texture.loadFromFile("assets/imgs/Nave2.png")) {
+            std::cerr << "Erro ao carregar textura da nave do jogador 2!" << std::endl;
+        }
     }
 
-    float centerX = sumX / count;
-    float centerY = sumY / count;
 
-    shape.setOrigin(centerX, centerY);
+    sprite.setScale(1.5f, 1.5f);
+    // Configura a sprite
+    sprite.setTexture(texture);
+    sprite.setOrigin(bounds.width/2, bounds.height/2);
+    sprite.setPosition(position);
+    sprite.setRotation(angle);
+    
 
 }
 
@@ -50,7 +41,8 @@ void Spaceship::update() {
     position.x += velocity.x;
     position.y += velocity.y;
 
-    // Limites da tela para cada jogador
+    sprite.setRotation(angle);
+    sprite.setPosition(position);
     if (isPlayer1) {
         if (position.x < 0) position.x = 0;
         if (position.x > WIDTH/2) position.x = WIDTH/2;
@@ -62,17 +54,20 @@ void Spaceship::update() {
     // Mantém a nave na parte inferior da tela
     if (position.y < 0) position.y = 0;
     if (position.y > HEIGHT) position.y = HEIGHT;
+    
 
-    shape.setPosition(position);
-    shape.setRotation(angle);
+    std::cout << "Ângulo atual: " << angle << " - Velocidade: (" 
+              << velocity.x << "," << velocity.y << ")" << std::endl;
+    // Limites da tela para cada jogador
+   
 }
 
 void Spaceship::accelerate(float amount) {
     // Conversão de ângulo para vetor de aceleração
-float rad = (shape.getRotation() - 90.0f) * PI / 180.0f;
+float rad = (sprite.getRotation() - 90.0f) * PI / 180.0f;
     sf::Vector2f acceleration(
-        amount * std::cos(rad),
-        amount * std::sin(rad)
+        amount * 0.5f * std::cos(rad),
+        amount * 0.5f * std::sin(rad)
     );
     
     velocity += acceleration;
@@ -94,7 +89,7 @@ if (std::abs(velocity.x) < 0.01f && std::abs(velocity.y) < 0.01f) {
 }
 
 sf::Vector2f Spaceship::getFirePosition() const {
-float rad = (shape.getRotation() - 90.0f) * PI / 180.0f;
+float rad = (sprite.getRotation() - 90.0f) * PI / 180.0f;
 
     return sf::Vector2f(
         position.x + 25 * std::cos(rad),
@@ -108,5 +103,20 @@ bool Spaceship::canFire  () const {
 }
 
 void Spaceship::resetFireCooldown()  {
+    fireCooldown.restart();
+}
+
+void Spaceship::reset(sf::Vector2f newPosition, float newAngle, bool player) {
+    position = newPosition;
+    angle = newAngle;
+    velocity = sf::Vector2f(0, 0);
+    isAlive = true;
+    isPlayer1 = player;
+    
+    // Reset da sprite
+    sprite.setPosition(position);
+    sprite.setRotation(angle);
+    
+    
     fireCooldown.restart();
 }
