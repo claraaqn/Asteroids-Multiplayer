@@ -27,19 +27,6 @@ using namespace GameConstants;
 
 int main() {
 
-    // Variáveis para tracking de performance
-    std::chrono::high_resolution_clock::time_point frameStart;
-    float frameTime = 0.0f;
-    float fps = 0.0f;
-    int frameCount = 0;
-    sf::Text fpsText;
-    sf::Text frameTimeText;
-    std::vector<float> frameTimesHistory;  // Para armazenar histórico de tempos de frame
-    const size_t MAX_HISTORY = 300;       // Quantos frames manter no histórico
-
-    PerformanceTracker perfTracker;
-
-
     srand(static_cast<unsigned int>(time(NULL)));
     sf::Listener::setGlobalVolume(100);
 
@@ -92,8 +79,6 @@ int main() {
     
     while (inMenu && window.isOpen()) {
 
-        perfTracker.startFrame();
-
         sf::Event event;
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed) {
@@ -140,12 +125,12 @@ int main() {
     Spaceship player2(sf::Vector2f(3*WIDTH/4, HEIGHT - 40), 0, false);
     player2.shape.setOutlineColor(sf::Color::Cyan);
 
-    std::vector<Bullet> bullets1(10);
-    std::vector<Bullet> bullets2(10);
+    std::vector<Bullet> bullets1(20);
+    std::vector<Bullet> bullets2(20);
     std::vector<sf::Sound> activeSounds;
 
-    for (auto& bullet : bullets1) { bullet.shape.setFillColor(sf::Color::Green); }
-    for (auto& bullet : bullets2) { bullet.shape.setFillColor(sf::Color::Cyan); }
+    for (auto& bullet : bullets1) { bullet.shape.setFillColor(sf::Color::Green); bullet.isActive = false; }
+    for (auto& bullet : bullets2) { bullet.shape.setFillColor(sf::Color::Cyan); bullet.isActive = false; }
 
     sf::Clock explosionClock;
     std::vector<Asteroid> asteroids;
@@ -198,6 +183,34 @@ int main() {
         game.checkGameOver(player1.isAlive, player2.isAlive, score1, score2);
         // --- Renderização ---
         window.clear(sf::Color::Black);  // Limpa a tela uma única vez
+
+        // Limpeza de explosões terminadas
+        asteroidExplosions.erase(std::remove_if(asteroidExplosions.begin(), asteroidExplosions.end(),
+            [](const AsteroidExplosion& e) { 
+                return e.timer >= 0.3f; // Remove após 0.3 segundos
+            }), 
+            asteroidExplosions.end());
+
+        // Limpeza de balas inativas ou fora da tela
+        auto cleanBullets = [](std::vector<Bullet>& bullets) {
+        // Apenas desativa as balas, não as remove do vetor
+            for (auto& bullet : bullets) {
+                if (bullet.isActive && 
+                (bullet.shape.getPosition().x < -50 || 
+                    bullet.shape.getPosition().x > WIDTH + 50 ||
+                    bullet.shape.getPosition().y < -50 ||
+                    bullet.shape.getPosition().y > HEIGHT + 50)) {
+                    bullet.isActive = false;
+                }
+            }
+        };
+        cleanBullets(bullets1);
+        cleanBullets(bullets2);
+
+        // Limpeza de sons terminados (já existe no seu código, mantenha)
+        activeSounds.erase(std::remove_if(activeSounds.begin(), activeSounds.end(), 
+            [](const sf::Sound& s){ return s.getStatus() == sf::Sound::Stopped; }), 
+            activeSounds.end());
         
         // Desenha o fundo estrelado primeiro
         starfield.draw(window);
@@ -297,18 +310,17 @@ int main() {
                     }
                 }
                 if ((event.key.code == sf::Keyboard::Enter || event.key.code == sf::Keyboard::Return) && 
-                    player2.canFire() && player2.isAlive){               
+                    player2.canFire() && player2.isAlive){       
                         for (auto& bullet : bullets2) {
                             if (!bullet.isActive) { 
                                 bullet.fire(player2.getFirePosition(), player2.angle); 
                                 bullet.isActive = true;
-                                player2.resetFireCooldown(); 
-                               
+                                player2.resetFireCooldown();                                
                                 
-                            activeSounds.emplace_back();
-                            activeSounds.back().setBuffer(shootBuffer);
-                            activeSounds.back().setVolume(70); // Aumente o volume para teste
-                            activeSounds.back().play(); // <--- ADICIONE AO VETOR!
+                                activeSounds.emplace_back();
+                                activeSounds.back().setBuffer(shootBuffer);
+                                activeSounds.back().setVolume(70); // Aumente o volume para teste
+                                activeSounds.back().play(); // <--- ADICIONE AO VETOR!
                            
                                 break; 
                             }
@@ -415,6 +427,9 @@ int main() {
                 //! SPAWN DE NOVOS ASTEROIDES
                 float currentGameTime = gameTimeClock.getElapsedTime().asSeconds();
 
+                // limite máximo de asteroides
+                const int MAX_ASTEROIDS = 100;
+
                 // Calcula o intervalo atual de spawn (diminui com o tempo)
                 float currentSpawnInterval = std::max(
                     baseSpawnInterval - (currentGameTime * spawnAcceleration),
@@ -423,11 +438,11 @@ int main() {
 
                 // Calcula quantos asteroides spawnar neste momento (aumenta com o tempo)
                 int asteroidsToSpawn = std::min(
-                    baseAsteroidsPerSpawn + static_cast<int>(currentGameTime / 30), // +1 a cada 30 segundos
+                    baseAsteroidsPerSpawn + static_cast<int>(currentGameTime / 30),
                     maxAsteroidsPerSpawn
                 );
 
-                if (asteroidClock.getElapsedTime().asSeconds() > currentSpawnInterval) {
+                if (asteroidClock.getElapsedTime().asSeconds() > currentSpawnInterval && asteroids.size() < MAX_ASTEROIDS) {
                     static bool spawnLeft = true;
                     
                     // Calcula a velocidade atual
@@ -463,9 +478,10 @@ int main() {
                         
                         for (size_t i = 0; i < asteroids.size(); ) {
                             sf::Vector2f diff = bullet.shape.getPosition() - asteroids[i].getPosition();
-                            float distance = std::sqrt(diff.x * diff.x + diff.y * diff.y);
+                            float distanceSquared = diff.x * diff.x + diff.y * diff.y;
+                            float radiusSum = asteroids[i].getRadius() + bullet.shape.getRadius();
                             
-                            if (distance < asteroids[i].getRadius()) {
+                            if (distanceSquared < radiusSum * radiusSum) {
                                 bullet.isActive = false;
                                 score1 += (4 - asteroids[i].getSize()) * 10; // Ajuste para score2 no jogador 2
                                 
@@ -531,9 +547,10 @@ int main() {
                         
                         for (size_t i = 0; i < asteroids.size(); ) {
                             sf::Vector2f diff = bullet.shape.getPosition() - asteroids[i].getPosition();
-                            float distance = std::sqrt(diff.x * diff.x + diff.y * diff.y);
+                            float distanceSquared = diff.x * diff.x + diff.y * diff.y;
+                            float radiusSum = asteroids[i].getRadius() + bullet.shape.getRadius();
                             
-                            if (distance < asteroids[i].getRadius()) {
+                            if (distanceSquared < radiusSum * radiusSum) {
                                 bullet.isActive = false;
                                 score2 += (4 - asteroids[i].getSize()) * 10; // Ajuste para score2 no jogador 2
                                 
@@ -625,8 +642,6 @@ int main() {
 
         window.draw(scoreText1);
         window.draw(scoreText2);
-
-        // --- Desenha mensagens de Game Over INDIVIDUALMENTE ---
     
         
         // --- Desenha o texto de reinício GLOBAL se o jogo estiver em GAME_OVER ---
@@ -672,7 +687,7 @@ int main() {
     continue;
 }
         perfTracker.endFrame();
-
+      
         window.display();
         } // Fim do while (window.isOpen())
     return 0;
