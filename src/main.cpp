@@ -137,7 +137,7 @@ int main() {
     //player1.sprite.setOutlineColor(sf::Color::Green);
 
     Spaceship player2(sf::Vector2f(3*WIDTH/4, HEIGHT - 40), 0, false);
-    player2.shape.setOutlineColor(sf::Color::Cyan);
+    //player2.shape.setOutlineColor(sf::Color::Cyan);
 
     std::vector<Bullet> bullets1;
     std::vector<Bullet> bullets2;
