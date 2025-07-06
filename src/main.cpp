@@ -40,6 +40,7 @@ int main() {
     PerformanceTracker perfTracker;
 
 
+
     srand(static_cast<unsigned int>(time(NULL)));
     sf::Listener::setGlobalVolume(100);
 
@@ -126,6 +127,7 @@ int main() {
         return EXIT_FAILURE;
     }
     
+    
 
     Game game; // Instância do gerenciador de estado do jogo
     Starfield starfield(200, WIDTH, HEIGHT);
@@ -140,8 +142,8 @@ int main() {
     Spaceship player2(sf::Vector2f(3*WIDTH/4, HEIGHT - 40), 0, false);
     player2.shape.setOutlineColor(sf::Color::Cyan);
 
-    std::vector<Bullet> bullets1(10);
-    std::vector<Bullet> bullets2(10);
+    std::vector<Bullet> bullets1;
+    std::vector<Bullet> bullets2;
     std::vector<sf::Sound> activeSounds;
 
     for (auto& bullet : bullets1) { bullet.shape.setFillColor(sf::Color::Green); }
@@ -249,6 +251,8 @@ int main() {
                     player2 = Spaceship(sf::Vector2f(3*WIDTH/4, HEIGHT - 40), 0, false);
                     player2.shape.setOutlineColor(sf::Color::Cyan);
                     
+            
+
                     bullets1.clear();
                     for (int i = 0; i < 10; ++i) {
                         bullets1.emplace_back();
@@ -283,9 +287,9 @@ int main() {
                 if (event.key.code == sf::Keyboard::Space && player1.canFire() && player1.isAlive) {
                     for (auto& bullet : bullets1) {
                         if (!bullet.isActive) { 
-                            bullet.fire(player1.getFirePosition(), player1.angle); 
-                            bullet.isActive = true;
-                            player1.resetFireCooldown(); 
+                            bullets1.emplace_back(); // Cria uma nova bala
+                            bullets1.back().fire(player1.getFirePosition(), player1.angle);
+                            player1.resetFireCooldown();
                             
                            
                             activeSounds.emplace_back();
@@ -300,8 +304,8 @@ int main() {
                     player2.canFire() && player2.isAlive){               
                         for (auto& bullet : bullets2) {
                             if (!bullet.isActive) { 
-                                bullet.fire(player2.getFirePosition(), player2.angle); 
-                                bullet.isActive = true;
+                                bullets2.emplace_back(); // Cria uma nova bala
+                                bullets2.back().fire(player2.getFirePosition(), player2.angle);
                                 player2.resetFireCooldown(); 
                                
                                 
@@ -353,12 +357,13 @@ int main() {
                     if (sf::Joystick::isButtonPressed(0, 0) && player1.canFire()) {
                         for (auto& bullet : bullets1) {
                             if (!bullet.isActive) { 
-                                bullet.fire(player1.getFirePosition(), player1.angle); 
+                                bullets1.emplace_back();
+                                bullets1.back().fire(player1.getFirePosition(), player1.angle);
                                 player1.resetFireCooldown();
+                                
                                 activeSounds.emplace_back();
                                 activeSounds.back().setBuffer(shootBuffer);
-                                activeSounds.back().setVolume(70);
-                                activeSounds.back().play(); 
+                                activeSounds.back().play();
                                 break; 
                             }
                         }
@@ -392,11 +397,12 @@ int main() {
                 if (sf::Joystick::isButtonPressed(1, 0) && player2.canFire()) {
                     for (auto& bullet : bullets2) {
                         if (!bullet.isActive) { 
-                            bullet.fire(player2.getFirePosition(), player2.angle); 
-                            player2.resetFireCooldown(); 
+                             bullets2.emplace_back();
+                            bullets2.back().fire(player2.getFirePosition(), player2.angle);
+                            player2.resetFireCooldown();
+                            
                             activeSounds.emplace_back();
                             activeSounds.back().setBuffer(shootBuffer);
-                            activeSounds.back().setVolume(70);
                             activeSounds.back().play();
                             break; 
                         }
@@ -411,7 +417,15 @@ int main() {
                 for (auto& bullet : bullets1) bullet.update(deltaTime);
                 for (auto& bullet : bullets2) bullet.update(deltaTime);
                 for (auto& asteroid : asteroids) asteroid.update(deltaTime, currentTime);
+                
+                //? Remover as balas de fora da tela
+                bullets1.erase(std::remove_if(bullets1.begin(), bullets1.end(),
+                        [](const Bullet& b) { return b.isOutOfBounds(); }), 
+                        bullets1.end());
 
+                bullets2.erase(std::remove_if(bullets2.begin(), bullets2.end(),
+                    [](const Bullet& b) { return b.isOutOfBounds(); }), 
+                    bullets2.end());
                 //! SPAWN DE NOVOS ASTEROIDES
                 float currentGameTime = gameTimeClock.getElapsedTime().asSeconds();
 

@@ -30,3 +30,8 @@ void Bullet::update(float deltaTime) {
         isActive = false;
     }
 }
+
+bool Bullet::isOutOfBounds() const {
+    const sf::Vector2f& pos = shape.getPosition();
+    return pos.x < 0 || pos.x > WIDTH || pos.y < 0 || pos.y > HEIGHT;
+}
