@@ -12,4 +12,5 @@ public:
     Bullet();
     void fire(sf::Vector2f pos, float angle);
     void update(float deltaTime);  // Adicionado deltaTime
+    bool isOutOfBounds() const;
 };
