@@ -139,8 +139,9 @@ int main() {
     Spaceship player2(sf::Vector2f(3*WIDTH/4, HEIGHT - 40), 0, false);
     //player2.shape.setOutlineColor(sf::Color::Cyan);
 
-    std::vector<Bullet> bullets1;
-    std::vector<Bullet> bullets2;
+    std::vector<Bullet> bullets1(20);
+    std::vector<Bullet> bullets2(20);
+  
     std::vector<sf::Sound> activeSounds;
 
     for (auto& bullet : bullets1) { bullet.shape.setFillColor(sf::Color::Green); bullet.isActive = false; }
@@ -302,8 +303,7 @@ int main() {
            
             }
 
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Q)) player1.angle -= 3.0f;
-if (sf::Keyboard::isKeyPressed(sf::Keyboard::E)) player1.angle += 3.0f;
+            
 
             // Sistema de tiro por evento (se a nave estiver viva)
             if (event.type == sf::Event::KeyPressed) {
