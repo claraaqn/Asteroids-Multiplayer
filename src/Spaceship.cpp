@@ -104,7 +104,7 @@ float rad = (shape.getRotation() - 90.0f) * PI / 180.0f;
 }
 
 bool Spaceship::canFire  () const {
-    return fireCooldown.getElapsedTime().asMilliseconds() > 300;
+    return fireCooldown.getElapsedTime().asMilliseconds() > FIRE_COOLDOWN;
 }
 
 void Spaceship::resetFireCooldown()  {
