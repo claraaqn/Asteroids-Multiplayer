@@ -3,5 +3,5 @@
 namespace GameConstants {
     const int WIDTH = 800;
     const int HEIGHT = 600;
-    const float PI = 3.14159265f;
+    constexpr float PI = 3.14159265358979323846f;
 }
