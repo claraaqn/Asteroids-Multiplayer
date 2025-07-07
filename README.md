@@ -30,10 +30,11 @@
 
 ## 📂 Estrutura do Projeto
 
+```
 jogo-asteroids/
 ├── assets/
 │   ├── font/                  # Fontes do jogo
-│   │   ├── PixelifySans-*.ttf
+│   │   ├── PixelifySans.ttf
 │   ├── imgs/                  # Imagens
 │   │   └── Fundo_Tela2.jpg
 │   └── sound/                 # Efeitos sonoros
@@ -62,6 +63,7 @@ jogo-asteroids/
 ├── main.cpp                   # Ponto de entrada
 ├── .gitignore
 └── jogo.exe                   # Executável
+```
 
 
 ## 🚀 Como Executar
