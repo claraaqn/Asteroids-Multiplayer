@@ -5,16 +5,17 @@
 using namespace GameConstants;
 
 Bullet::Bullet() {
-    shape.setRadius(5);  // Aumentei o raio para melhor visibilidade
+    shape.setRadius(3);  // Aumentei o raio para melhor visibilidade
     shape.setFillColor(sf::Color::White);
-    shape.setOrigin(5, 5);  // Origem centralizada
+    shape.setOrigin(1, 1);  // Origem centralizada
+    shape.setFillColor(sf::Color::Red);
+    shape.setScale(1, 1);
     isActive = false;
 }
 
 void Bullet::fire(sf::Vector2f pos, float angle) {
     shape.setPosition(pos);
     float rad = (angle - 90) * PI / 180;
-    
     velocity.x = std::cos(rad) * SPEED;
     velocity.y = std::sin(rad) * SPEED;
     isActive = true;

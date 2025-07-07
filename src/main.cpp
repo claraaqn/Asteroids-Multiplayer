@@ -666,12 +666,8 @@ int main() {
     }// Fim do while (window.pollEvent(event))
 
         starfield.update(deltaTime);
-        window.clear(sf::Color::Black);
-        starfield.draw(window);
-        
-
         window.draw(divider);
-
+    
         // Desenha asteroides, balas, naves se estiverem ativas
         drawExplosionAnimation();
         for (const auto& asteroid : asteroids) { 
