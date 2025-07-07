@@ -15,5 +15,5 @@ public:
     
 private:
     static constexpr float SPEED = 800.0f;
-    static constexpr float RADIUS = 4.0f;
+    static constexpr float RADIUS = 3.0f;
 };
