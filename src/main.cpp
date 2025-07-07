@@ -133,9 +133,6 @@ int main() {
 
     Spaceship player2(sf::Vector2f(3*WIDTH/4, HEIGHT - 40), 0, false);
     //player2.shape.setOutlineColor(sf::Color::Cyan);
-
-    std::vector<Bullet> bullets1(20);
-    std::vector<Bullet> bullets2(20);
   
     std::vector<sf::Sound> activeSounds;
 
