@@ -45,7 +45,7 @@ Asteroid::Asteroid(sf::Vector2f pos, sf::Vector2f vel, int sz) :
     sprite.setOrigin(bounds.left + bounds.width / 2.0f, bounds.top + bounds.height / 2.0f);
     sprite.setPosition(this->position);
     sprite.setRotation(initial_rotation_distrib(gen)); 
-    sprite.setScale(size, size);
+    sprite.setScale(size * 0.7f, size * 0.7f);
 }
 
 void Asteroid::update(float deltaTime, float currentTime) {
