@@ -102,7 +102,7 @@ Este projeto demonstra conceitos de:
 Este projeto está licenciado sob a MIT License - veja o arquivo [LICENSE.md] para detalhes.
 
 ## 🙌 Agradecimentos
-- À [Instituição de Ensino] pelo apoio
+- À Universidade Federal Rural de Pernambuco - Unidade Acadêmica de Belo Jardim (UFRPE-UABJ) pelo apoio
 - Ao programa Meninas na Ciência
 - Aos professores orientadores
 
