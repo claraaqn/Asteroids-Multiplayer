@@ -129,11 +129,14 @@ int main() {
     divider.setPosition(WIDTH/2, 0);
 
     Spaceship player1(sf::Vector2f(WIDTH/4, HEIGHT - 40), 0, true);
-    player1.shape.setOutlineColor(sf::Color::Green);
+    //player1.sprite.setOutlineColor(sf::Color::Green);
 
     Spaceship player2(sf::Vector2f(3*WIDTH/4, HEIGHT - 40), 0, false);
-    player2.shape.setOutlineColor(sf::Color::Cyan);
+    //player2.shape.setOutlineColor(sf::Color::Cyan);
 
+    std::vector<Bullet> bullets1(20);
+    std::vector<Bullet> bullets2(20);
+  
     std::vector<sf::Sound> activeSounds;
 
     //! Balas
@@ -257,13 +260,9 @@ int main() {
                 if (event.key.code == sf::Keyboard::R) {
                     game.reset(); 
 
-                    player1 = Spaceship(sf::Vector2f(WIDTH/4, HEIGHT - 40), 0, true);
-                    player1.shape.setOutlineColor(sf::Color::Green);
-                    
-                    player2 = Spaceship(sf::Vector2f(3*WIDTH/4, HEIGHT - 40), 0, false);
-                    player2.shape.setOutlineColor(sf::Color::Cyan);
-                    
-                    // Reseta as balas
+                    player1.reset(sf::Vector2f(WIDTH/4, HEIGHT - 40), 0, true);
+                    player2.reset(sf::Vector2f(3*WIDTH/4, HEIGHT - 40), 0, false);
+
                     bullets1.clear();
                     bullets1.resize(1);
 
@@ -284,6 +283,8 @@ int main() {
                 } // --- Fim da Lógica de Reinício do Jogo ---
            
             }
+
+            
 
             // Sistema de tiro por evento (se a nave estiver viva)
             if (event.type == sf::Event::KeyPressed) {
@@ -323,13 +324,23 @@ int main() {
                     
                     // Deadzone de 15% - precisa mover o joystick além de 15% de sua amplitude total para que o movimento seja detectado
                     if (std::abs(joystickX) > 25.0f || std::abs(joystickY) > 25.0f) {
+                        float rotationSpeed = 2.5f; // Ajuste a sensibilidade aqui
+                        player1.angle += joystickX * rotationSpeed * deltaTime; // deltaTime para suavizar
+                        
+                        // Normaliza o ângulo entre 0-360 graus
+                        if (player1.angle > 360) player1.angle -= 360;
+                        if (player1.angle < 0) player1.angle += 360;
+                        
+                        // Atualiza a rotação visual
+                        player1.sprite.setRotation(player1.angle);
+                        
                         // Normaliza os valores do joystick
                         float normX = (joystickX / 100.0f) * 0.7f;
                         float normY = (-joystickY / 100.0f) * 0.7f; //* Invertido porque em SFML, Y cresce para baixo
                         
                         // Calcula a direção do movimento baseado no ângulo da nave
                         float radAngle = player1.angle * (3.14159265f / 180.0f); // Converte para radianos
-                        
+                        player1.sprite.setRotation(player1.angle);
                         // Se você quiser movimento relativo à direção da nave (forward/backward + strafe)
                         float forwardForce = normY * cos(radAngle) - normX * sin(radAngle);
                         float lateralForce = normY * sin(radAngle) + normX * cos(radAngle);
@@ -368,14 +379,25 @@ int main() {
                     float joystickY = sf::Joystick::getAxisPosition(1, sf::Joystick::Y);
                     
                     if (std::abs(joystickX) > 25.0f || std::abs(joystickY) > 25.0f) {
-                        float normX = (joystickX / 100.0f) * 0.7f;
+                        
+                    float rotationSpeed = 2.5f; 
+                    player2.angle += joystickX * rotationSpeed * deltaTime;
+                    
+                    // Normaliza ângulo
+                    if (player2.angle > 360) player2.angle -= 360;
+                    if (player2.angle < 0) player2.angle += 360;
+                    
+                    player2.sprite.setRotation(player2.angle); 
+                    
+                    float normX = (joystickX / 100.0f) * 0.7f;
                         float normY = (-joystickY / 100.0f) * 0.7f;
                         
                         float radAngle = player2.angle * (3.14159265f / 180.0f);
                         
                         float forwardForce = normY * cos(radAngle) - normX * sin(radAngle);
                         float lateralForce = normY * sin(radAngle) + normX * cos(radAngle);
-                        
+                        player2.sprite.setRotation(player2.angle);
+
                         player2.velocity.x += forwardForce * 0.25f;
                         player2.velocity.y += -forwardForce * 0.25f; 
                         player2.velocity.x += lateralForce * 0.25f;
@@ -579,15 +601,12 @@ int main() {
     }// Fim do while (window.pollEvent(event))
 
         starfield.update(deltaTime);
-        window.clear(sf::Color::Black);
-        starfield.draw(window);
-        
-
         window.draw(divider);
+    
 
-        for (const auto& asteroid : asteroids) { 
-            asteroid.draw(window); 
-        }
+        // for (const auto& asteroid : asteroids) { 
+        //     asteroid.draw(window); 
+        // }
 
         // Desenha asteroides, balas, naves se estiverem ativas
         drawExplosionAnimation();
@@ -596,8 +615,8 @@ int main() {
         }
 
         // Naves só são desenhadas se estiverem vivas
-        if (player1.isAlive) window.draw(player1.shape);
-        if (player2.isAlive) window.draw(player2.shape);
+        if (player1.isAlive) window.draw(player1.sprite);
+        if (player2.isAlive) window.draw(player2.sprite);
 
         for (auto& bullet : bullets1) {
             if (bullet.isActive) {
