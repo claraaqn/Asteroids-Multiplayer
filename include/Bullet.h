@@ -7,10 +7,13 @@ public:
     sf::CircleShape shape;
     sf::Vector2f velocity;
     bool isActive;
-    static constexpr float SPEED = 1200.0f;  // Velocidade constante alta
-
+    
     Bullet();
-    void fire(sf::Vector2f pos, float angle);
-    void update(float deltaTime);  // Adicionado deltaTime
+    void fire(sf::Vector2f pos, float angle, const sf::Color& color);
+    void update(float deltaTime);
     bool isOutOfBounds() const;
+    
+private:
+    static constexpr float SPEED = 800.0f;
+    static constexpr float RADIUS = 4.0f;
 };
