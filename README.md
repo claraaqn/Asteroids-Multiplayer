@@ -81,8 +81,8 @@ jogo-asteroids/
    
 
 3. *Controles*:
-   - *Jogador 1*: Teclado (WASD para movimento, Espaço para atirar)
-   - *Jogador 2*: Joystick ou teclado alternativo
+   - *Jogador 1*: Joystick
+   - *Jogador 2*: Joystick
 
 ## 🌟 Objetivos Educacionais
 Este projeto demonstra conceitos de:
