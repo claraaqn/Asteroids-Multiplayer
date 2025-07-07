@@ -13,7 +13,9 @@ private:
     float scale;
     float targetScale;
     float rotationSpeed;
-    sf::ConvexShape shape;
+    sf::Texture texture;
+    sf::Sprite sprite;
+    bool textureLoaded = false;
     
 public:
     Asteroid(sf::Vector2f pos, sf::Vector2f vel, int sz);
@@ -21,5 +23,7 @@ public:
     void draw(sf::RenderWindow& window) const;
     sf::Vector2f getPosition() const;
     float getRadius() const;
-    int getSize() const { return size; }
+    int getSize() const ;
+
+    
 };
