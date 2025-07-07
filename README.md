@@ -1,4 +1,4 @@
-# README - Jogo SBPC: Asteroids Multiplayer
+# README - Asteroids Multiplayer
 
 ## 📌 Sobre o Projeto
 *Jogo SBPC* é um jogo de Asteroids multiplayer desenvolvido como parte do projeto de extensão Meninas na Ciência, com o objetivo de:
