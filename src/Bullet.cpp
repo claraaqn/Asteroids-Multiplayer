@@ -7,7 +7,7 @@ using namespace GameConstants;
 Bullet::Bullet() {
     shape.setRadius(3);  // Aumentei o raio para melhor visibilidade
     shape.setFillColor(sf::Color::White);
-    shape.setOrigin(1, 1);  // Origem centralizada
+    shape.setOrigin(4, 4);  // Origem centralizada
     shape.setFillColor(sf::Color::Red);
     shape.setScale(1, 1);
     isActive = false;

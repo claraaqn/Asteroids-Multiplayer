@@ -10,7 +10,7 @@ Spaceship::Spaceship(sf::Vector2f startPos, float startAngle, bool player1) {
     isAlive = true;
     isPlayer1 = player1;
     sf::FloatRect bounds = sprite.getLocalBounds();
-
+   
 
 // Carrega a textura apropriada para cada jogador
     if (isPlayer1) {
@@ -24,7 +24,7 @@ Spaceship::Spaceship(sf::Vector2f startPos, float startAngle, bool player1) {
     }
 
 
-    sprite.setScale(1.5f, 1.5f);
+    sprite.setScale(1.2f, 1.2f);
     // Configura a sprite
     sprite.setTexture(texture);
     sprite.setOrigin(bounds.width/2, bounds.height/2);
@@ -36,7 +36,7 @@ Spaceship::Spaceship(sf::Vector2f startPos, float startAngle, bool player1) {
 
 void Spaceship::update() {
     if (!isAlive) return;
-
+    
     // Movimento apenas horizontal
     position.x += velocity.x;
     position.y += velocity.y;

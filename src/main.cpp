@@ -280,6 +280,7 @@ int main() {
                         bullets1.back().shape.setFillColor(sf::Color::Green);
                         bullets1.back().isActive = false;
                     }
+                
                     
                     bullets2.clear();
                     for (int i = 0; i < 10; ++i) {
@@ -300,6 +301,10 @@ int main() {
                     score1 = 0; score2 = 0; 
             
                 } // --- Fim da Lógica de Reinício do Jogo ---
+                else if (event.key.code == sf::Keyboard::Q) {  // Sair
+                window.close();
+                return 0;  // Sai imediatamente do jogo
+            }
            
             }
 
