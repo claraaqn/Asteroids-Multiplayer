@@ -19,18 +19,19 @@ GameOverScreen::GameOverScreen(const sf::Font& font) {
     quitText.setString("PRESS 'Q' TO QUIT");
     quitText.setCharacterSize(30);
     quitText.setFillColor(sf::Color::White);
-    centerText(quitText);
+    
     
     // Centraliza os textos
     centerText(gameOverText);
     centerText(winnerText);
     centerText(restartText);
-    
+    centerText(quitText);
+
     // Posicionamento relativo
     gameOverText.setPosition(0, -120);
     winnerText.setPosition(0, 0);
-    restartText.setPosition(0, 120);
-    quitText.setPosition(0, 140); 
+    restartText.setPosition(0, 100);
+    quitText.setPosition(0, 160); 
 }
 
 void GameOverScreen::update(int winner, int score1, int score2) {
@@ -61,6 +62,7 @@ void GameOverScreen::setPosition(float x, float y) {
     gameOverText.setPosition(x, y + gameOverText.getPosition().y);
     winnerText.setPosition(x, y + winnerText.getPosition().y);
     restartText.setPosition(x, y + restartText.getPosition().y);
+    quitText.setPosition(x, y + quitText.getPosition().y);
 }
 
 void GameOverScreen::centerText(sf::Text& text) {

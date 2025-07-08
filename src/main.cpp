@@ -133,9 +133,6 @@ int main() {
 
     Spaceship player2(sf::Vector2f(3*WIDTH/4, HEIGHT - 40), 0, false);
     //player2.shape.setOutlineColor(sf::Color::Cyan);
-
-    std::vector<Bullet> bullets1(20);
-    std::vector<Bullet> bullets2(20);
   
     std::vector<sf::Sound> activeSounds;
 
@@ -256,7 +253,7 @@ int main() {
 
             // --- Lógica de Reinício do Jogo (ativada se o jogo está em GAME_OVER) ---
             if ((game.isGameOver() && (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::R)) || 
-            (event.type == sf::Event::JoystickButtonPressed && event.joystickButton.button == 7)) {
+            (event.type == sf::Event::JoystickButtonPressed && event.joystickButton.button == 7) || (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Q)) {
                 if (event.key.code == sf::Keyboard::R) {
                     game.reset(); 
 
