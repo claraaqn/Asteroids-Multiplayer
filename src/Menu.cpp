@@ -31,7 +31,7 @@ Menu::Menu(sf::RenderWindow& window, sf::Font& font)
     
     //? Configura os créditos
     creditsText.setFont(font);
-    creditsText.setString("MENINAS NA CIÊNCIA APRESENTA");
+    creditsText.setString("MENINAS NA CIENCIA APRESENTA");
     creditsText.setCharacterSize(static_cast<unsigned int>(GameConstants::HEIGHT / 30));
     creditsText.setFillColor(sf::Color::White);
     creditsText.setOrigin(creditsText.getLocalBounds().width/2, creditsText.getLocalBounds().height/2);
