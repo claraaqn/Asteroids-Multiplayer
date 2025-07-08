@@ -253,7 +253,7 @@ int main() {
 
             // --- Lógica de Reinício do Jogo (ativada se o jogo está em GAME_OVER) ---
             if ((game.isGameOver() && (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::R)) || 
-            (event.type == sf::Event::JoystickButtonPressed && event.joystickButton.button == 7)) {
+            (event.type == sf::Event::JoystickButtonPressed && event.joystickButton.button == 7) || (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Q)) {
                 if (event.key.code == sf::Keyboard::R) {
                     game.reset(); 
 
@@ -278,6 +278,10 @@ int main() {
                     score1 = 0; score2 = 0; 
             
                 } // --- Fim da Lógica de Reinício do Jogo ---
+                else if (event.key.code == sf::Keyboard::Q) {  // Sair
+                window.close();
+                return 0;  // Sai imediatamente do jogo
+            }
            
             }
 
