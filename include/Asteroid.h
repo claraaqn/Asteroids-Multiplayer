@@ -13,9 +13,10 @@ private:
     float scale;
     float targetScale;
     float rotationSpeed;
-    sf::Texture texture;
+    static sf::Texture texture;
+    static bool textureLoaded;
     sf::Sprite sprite;
-    bool textureLoaded = false;
+    
     
 public:
     Asteroid(sf::Vector2f pos, sf::Vector2f vel, int sz);

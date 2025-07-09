@@ -15,7 +15,8 @@ std::uniform_real_distribution<float> angle_offset_distrib(-20.0f, 20.0f);
 std::uniform_real_distribution<float> distance_offset_distrib(0.5f, 1.5f);
 std::uniform_real_distribution<float> initial_rotation_distrib(0.0f, 360.0f);
 std::uniform_real_distribution<float> rotation_speed_distrib(0.1f, 1.5f);
-
+sf::Texture Asteroid::texture;
+bool Asteroid::textureLoaded = false;
 
 Asteroid::Asteroid(sf::Vector2f pos, sf::Vector2f vel, int sz) :
     position(pos),
@@ -28,16 +29,17 @@ Asteroid::Asteroid(sf::Vector2f pos, sf::Vector2f vel, int sz) :
     targetScale(1.0f),
     rotationSpeed(rotation_speed_distrib(gen))
 {
-    if (!texture.loadFromFile("assets/imgs/Asteroid.png")) {
-        std::cerr << "Erro ao carregar textura do asteroide!" << std::endl;
-        // Fallback: cria um círculo vermelho para debug
-        sprite.setColor(sf::Color::Red);
+     if (!textureLoaded) {
+        if (!texture.loadFromFile("assets/imgs/Asteroid.png")) {
+            std::cerr << "Erro ao carregar textura do asteroide!" << std::endl;
+            // Fallback
+        }
+        texture.setSmooth(false);
+        textureLoaded = true;
     }
-    texture.setSmooth(false); 
 
     // Configura a sprite
     sprite.setTexture(texture);
-    sprite.setColor(sf::Color::White);
     sf::FloatRect bounds = sprite.getLocalBounds();
     radius = (bounds.width + bounds.height) / 4.0f * size;
 
