@@ -9,7 +9,7 @@ public:
     bool isActive;
     
     Bullet();
-    void fire(sf::Vector2f pos, float angle, const sf::Color& color);
+    void fire(sf::Vector2f pos, float angle);
     void update(float deltaTime);
     bool isOutOfBounds() const;
     
