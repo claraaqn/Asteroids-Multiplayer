@@ -12,7 +12,7 @@ Spaceship::Spaceship(sf::Vector2f startPos, float startAngle, bool player1) {
     sf::FloatRect bounds = sprite.getLocalBounds();
    
 
-// Carrega a textura apropriada para cada jogador
+    // Carrega a textura apropriada para cada jogador
     if (isPlayer1) {
         if (!texture.loadFromFile("assets/imgs/Nave.png")) {
             std::cerr << "Erro ao carregar textura da nave do jogador 1!" << std::endl;
@@ -37,29 +37,53 @@ Spaceship::Spaceship(sf::Vector2f startPos, float startAngle, bool player1) {
 void Spaceship::update() {
     if (!isAlive) return;
     
-    // Movimento apenas horizontal
-    position.x += velocity.x;
-    position.y += velocity.y;
+    // Atualiza posição
+    position += velocity;
+    
+    // Obtém as dimensões reais da sprite (já considerando escala e rotação)
+    sf::FloatRect globalBounds = sprite.getGlobalBounds();
+    float spriteWidth = globalBounds.width;
+    float spriteHeight = globalBounds.height;
+    
+    // Margem de segurança (ajuste conforme necessário)
+    const float margin = 5.0f; 
 
-    sprite.setRotation(angle);
-    sprite.setPosition(position);
+    // Limites para o jogador 1 (lado esquerdo)
     if (isPlayer1) {
-        if (position.x < 0) position.x = 0;
-        if (position.x > WIDTH/2) position.x = WIDTH/2;
-    } else {
-        if (position.x < WIDTH/2) position.x = WIDTH/2;
-        if (position.x > WIDTH) position.x = WIDTH;
+        if (position.x < spriteWidth/2 + margin) {
+            position.x = spriteWidth/2 + margin;
+            velocity.x = 0;
+        }
+        if (position.x > WIDTH/2 - spriteWidth/2 - margin) {
+            position.x = WIDTH/2 - spriteWidth/2 - margin;
+            velocity.x = 0;
+        }
+    } 
+    // Limites para o jogador 2 (lado direito)
+    else {
+        if (position.x < WIDTH/2 + spriteWidth/2 + margin) {
+            position.x = WIDTH/2 + spriteWidth/2 + margin;
+            velocity.x = 0;
+        }
+        if (position.x > WIDTH - spriteWidth/2 - margin) {
+            position.x = WIDTH - spriteWidth/2 - margin;
+            velocity.x = 0;
+        }
     }
 
-    // Mantém a nave na parte inferior da tela
-    if (position.y < 0) position.y = 0;
-    if (position.y > HEIGHT) position.y = HEIGHT;
-    
+    // Limites verticais
+    if (position.y < spriteHeight/2 + margin) {
+        position.y = spriteHeight/2 + margin;
+        velocity.y = 0;
+    }
+    if (position.y > HEIGHT - spriteHeight/2 - margin) {
+        position.y = HEIGHT - spriteHeight/2 - margin;
+        velocity.y = 0;
+    }
 
-    std::cout << "Ângulo atual: " << angle << " - Velocidade: (" 
-              << velocity.x << "," << velocity.y << ")" << std::endl;
-    // Limites da tela para cada jogador
-   
+    // Atualiza a sprite
+    sprite.setPosition(position);
+    sprite.setRotation(angle);
 }
 
 void Spaceship::accelerate(float amount) {

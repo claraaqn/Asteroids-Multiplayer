@@ -331,8 +331,8 @@ int main() {
                     // Deadzone de 15% - precisa mover o joystick além de 15% de sua amplitude total para que o movimento seja detectado
                     if (std::abs(joystickX) > 25.0f || std::abs(joystickY) > 25.0f) {
                         // Normaliza os valores do joystick
-                        float normX = (joystickX / 100.0f) * 0.7f;
-                        float normY = (-joystickY / 100.0f) * 0.7f; //* Invertido porque em SFML, Y cresce para baixo
+                        float normX = (joystickX / 100.0f) * 0.4f;
+                        float normY = (-joystickY / 100.0f) * 0.4f; //* Invertido porque em SFML, Y cresce para baixo
                         
                         // Calcula a direção do movimento baseado no ângulo da nave
                         float radAngle = player1.angle * (3.14159265f / 180.0f); // Converte para radianos
@@ -583,11 +583,6 @@ int main() {
 
         starfield.update(deltaTime);
         window.draw(divider);
-    
-
-        // for (const auto& asteroid : asteroids) { 
-        //     asteroid.draw(window); 
-        // }
 
         // Desenha asteroides, balas, naves se estiverem ativas
         drawExplosionAnimation();
