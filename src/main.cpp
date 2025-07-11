@@ -25,6 +25,13 @@
 
 using namespace GameConstants; 
 
+bool checkCollision(const Bullet& bullet, const Asteroid& asteroid) {
+    sf::Vector2f diff = bullet.shape.getPosition() - asteroid.getPosition();
+    float distanceSquared = diff.x * diff.x + diff.y * diff.y;
+    float radiusSum = asteroid.getRadius() + bullet.shape.getRadius();
+    return distanceSquared < radiusSum * radiusSum;
+}
+
 int main() {
 
     // Variáveis para tracking de performance
@@ -32,8 +39,6 @@ int main() {
     sf::Text fpsText;
     sf::Text frameTimeText;
     std::vector<float> frameTimesHistory;  // Para armazenar histórico de tempos de frame
-
-    PerformanceTracker perfTracker;
 
 
     srand(static_cast<unsigned int>(time(NULL)));
@@ -269,10 +274,10 @@ int main() {
                     asteroids.clear();
                     for (int i = 0; i < 5; ++i) {
                         float x = rand() % WIDTH; 
-                        float y = -50.0f - (rand() % 100); 
-                        float vx = (rand() % 100) / 50.0f - 1.0f; 
-                        float vy = 30.0f + (rand() % 100) / 20.0f;  // Entre 30.0 e 35.0  
-                        int size = (rand() % 2) + 2; //todo Tamanho 2 ou 3
+                        float y = -50.0f - (rand() % 100);
+                        float vx = (rand() % 100) / 50.0f - 1.0f;
+                        float vy = 30.0f + (rand() % 100) / 20.0f;
+                        int size = (rand() % 2) + 2;
                         asteroids.emplace_back(sf::Vector2f(x, y), sf::Vector2f(vx, vy), size);
                     }
                     score1 = 0; score2 = 0; 
@@ -450,16 +455,12 @@ int main() {
                 }
 
                 //? Colisões - player 1
-                //? Colisões - player 1
                 if (player1.isAlive) {
                     for (auto& bullet : bullets1) {
+                        if (!bullet.isActive) continue;
                         
                         for (size_t i = 0; i < asteroids.size(); ) {
-                            sf::Vector2f diff = bullet.shape.getPosition() - asteroids[i].getPosition();
-                            float distanceSquared = diff.x * diff.x + diff.y * diff.y;
-                            float radiusSum = asteroids[i].getRadius() + bullet.shape.getRadius();
-                            
-                            if (distanceSquared < radiusSum * radiusSum) {
+                            if (checkCollision(bullet, asteroids[i])) {
                                 bullet.isActive = false;
                                 score1 += (4 - asteroids[i].getSize()) * 10;
                                 
@@ -493,13 +494,14 @@ int main() {
                                 activeSounds.back().setVolume(70);
                                 activeSounds.back().play();
 
-                                break;
+                                break; // Sai do loop após colisão
                             } else {
                                 i++;
                             }
                         }
                     }
                     
+                    // Colisão nave-asteroide para Player 1
                     for (const auto& asteroid : asteroids) {
                         sf::Vector2f diff = player1.position - asteroid.getPosition();
                         float distance = std::sqrt(diff.x * diff.x + diff.y * diff.y);
@@ -513,13 +515,10 @@ int main() {
                 //? Colisões - player 2
                 if (player2.isAlive) {
                     for (auto& bullet : bullets2) {
-
+                        if (!bullet.isActive) continue;
+                        
                         for (size_t i = 0; i < asteroids.size(); ) {
-                            sf::Vector2f diff = bullet.shape.getPosition() - asteroids[i].getPosition();
-                            float distanceSquared = diff.x * diff.x + diff.y * diff.y;
-                            float radiusSum = asteroids[i].getRadius() + bullet.shape.getRadius();
-                            
-                            if (distanceSquared < radiusSum * radiusSum) {
+                            if (checkCollision(bullet, asteroids[i])) {
                                 bullet.isActive = false;
                                 score2 += (4 - asteroids[i].getSize()) * 10;
                                 
@@ -539,7 +538,8 @@ int main() {
                                     for (int j = 0; j < fragments; j++) {
                                         float angle = (360.0f / fragments) * j + (rand() % 45 - 22.5f);
                                         float speed = 20.0f + (rand() % 100) / 20.0f;
-                                        sf::Vector2f velocity(                                                speed * std::cos(angle * PI / 180.0f),
+                                        sf::Vector2f velocity(
+                                            speed * std::cos(angle * PI / 180.0f),
                                             speed * std::sin(angle * PI / 180.0f)
                                         );
                                         asteroids.emplace_back(hitPosition, velocity, 1);
@@ -552,8 +552,8 @@ int main() {
                                 activeSounds.back().setVolume(70);
                                 activeSounds.back().play();
 
-                                break;
-                            } else {                                    
+                                break; // Sai do loop após colisão
+                            } else {
                                 i++;
                             }
                         }
@@ -593,6 +593,12 @@ int main() {
         drawExplosionAnimation();
         for (const auto& asteroid : asteroids) { 
             asteroid.draw(window); 
+
+            sf::CircleShape debugCircle(asteroid.getRadius());
+            debugCircle.setPosition(asteroid.getPosition() - sf::Vector2f(asteroid.getRadius(), asteroid.getRadius()));
+            debugCircle.setFillColor(sf::Color::Transparent);
+            debugCircle.setOutlineColor(sf::Color::Green);
+            debugCircle.setOutlineThickness(1);
         }
 
         // Naves só são desenhadas se estiverem vivas
@@ -657,8 +663,6 @@ int main() {
             window.display();
             continue;
         }
-
-        perfTracker.endFrame();
             
         window.display();
 
