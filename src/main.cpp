@@ -341,14 +341,24 @@ int main() {
                     float joystickY = sf::Joystick::getAxisPosition(0, sf::Joystick::Y);
                     
                     // Deadzone de 15% - precisa mover o joystick além de 15% de sua amplitude total para que o movimento seja detectado
-                    if (std::abs(joystickX) > 25.0f || std::abs(joystickY) > 25.0f) {
+                     if (std::abs(joystickX) > 25.0f || std::abs(joystickY) > 25.0f) {
+                        float rotationSpeed = 2.5f; // Ajuste a sensibilidade aqui
+                        player1.angle += joystickX * rotationSpeed * deltaTime; // deltaTime para suavizar
+                        
+                        // Normaliza o ângulo entre 0-360 graus
+                        if (player1.angle > 360) player1.angle -= 360;
+                        if (player1.angle < 0) player1.angle += 360;
+                        
+                        // Atualiza a rotação visual
+                        player1.sprite.setRotation(player1.angle);
+                        
                         // Normaliza os valores do joystick
-                        float normX = (joystickX / 100.0f) * 0.4f;
-                        float normY = (-joystickY / 100.0f) * 0.4f; //* Invertido porque em SFML, Y cresce para baixo
+                        float normX = (joystickX / 100.0f) * 0.7f;
+                        float normY = (-joystickY / 100.0f) * 0.7f; //* Invertido porque em SFML, Y cresce para baixo
                         
                         // Calcula a direção do movimento baseado no ângulo da nave
                         float radAngle = player1.angle * (3.14159265f / 180.0f); // Converte para radianos
-                        
+                        player1.sprite.setRotation(player1.angle);
                         // Se você quiser movimento relativo à direção da nave (forward/backward + strafe)
                         float forwardForce = normY * cos(radAngle) - normX * sin(radAngle);
                         float lateralForce = normY * sin(radAngle) + normX * cos(radAngle);

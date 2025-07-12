@@ -13,7 +13,6 @@ Bullet::Bullet() : isActive(false) {
     isActive = false;
 }
 
-void Bullet::fire(sf::Vector2f pos, float angle, const sf::Color& color) {
     
 void Bullet::fire(sf::Vector2f pos, float angle) {
     shape.setPosition(pos);
