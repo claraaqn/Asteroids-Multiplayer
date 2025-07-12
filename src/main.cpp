@@ -141,7 +141,7 @@ int main() {
   
     std::vector<sf::Sound> activeSounds;
 
-    //! Balas
+    // Balas
     std::vector<Bullet> bullets1(1);
     std::vector<Bullet> bullets2(1);
 
@@ -233,6 +233,15 @@ int main() {
         for (auto& asteroid : asteroids) {
             asteroid.update(deltaTime, currentTimeAsteroids);
         }
+
+        // REMOVA ASTEROIDES QUE SAÍRAM DA TELA
+        asteroids.erase(std::remove_if(asteroids.begin(), asteroids.end(),
+            [](const Asteroid& a) {
+                return a.getPosition().y > HEIGHT + 100 || 
+                    a.getPosition().x < -100 || 
+                    a.getPosition().x > WIDTH + 100;
+            }), 
+        asteroids.end());
 
         // Atualiza as balas do jogador 1
         for (auto& bullet : bullets1) {
@@ -410,43 +419,33 @@ int main() {
                 //! SPAWN DE NOVOS ASTEROIDES
                 float currentGameTime = gameTimeClock.getElapsedTime().asSeconds();
 
-                // Limite máximo de asteroides na tela
-                const int MAX_ASTEROIDS = 30;  // Reduzido de 100 para melhor performance
-
-                // Intervalo entre spawns - diminui com o tempo mas tem limite mínimo
                 float currentSpawnInterval = std::max(
                     baseSpawnInterval - (currentGameTime * spawnAcceleration),
                     minSpawnInterval
                 );
 
-                // Quantidade de asteroides por spawn - aumenta com o tempo mas tem limite máximo
                 int asteroidsToSpawn = std::min(
                     baseAsteroidsPerSpawn + static_cast<int>(currentGameTime / 45), // +1 a cada 45 segundos
                     maxAsteroidsPerSpawn
                 );
 
-                if (asteroidClock.getElapsedTime().asSeconds() > currentSpawnInterval && 
-                    asteroids.size() < MAX_ASTEROIDS) {
-                    
+                if (asteroidClock.getElapsedTime().asSeconds() > currentSpawnInterval) {
                     static bool spawnLeft = true;
                     float currentSpeed = std::min(
                         baseAsteroidSpeed + (currentGameTime * speedIncreaseRate),
                         maxAsteroidSpeed
                     );
 
-                    // Spawn apenas se tiver espaço
-                    int canSpawn = std::min(asteroidsToSpawn, MAX_ASTEROIDS - static_cast<int>(asteroids.size()));
-                    
-                    for (int i = 0; i < canSpawn; i++) {
+                    for (int i = 0; i < asteroidsToSpawn; i++) {
                         float x = spawnLeft ? 
                             (rand() % (WIDTH / 3)) : 
                             (WIDTH * 2 / 3 + rand() % (WIDTH / 3));
                         
-                        float y = -50 - (i * 50); // Espaçamento vertical maior
-                        float vx = (rand() % 100) / 100.0f - 0.5f;
-                        float vy = currentSpeed * (0.9f + (rand() % 20) / 100.0f); // Variação de 90-110%
+                        float y = -50 - (i * 50); // Espaçamento vertical
+                        float vx = (rand() % 100) / 100.0f - 0.5f; // Pequeno movimento horizontal
+                        float vy = currentSpeed * (0.9f + (rand() % 20) / 100.0f); // Variação de velocidade
                         
-                        int size = (rand() % 2) + 2;
+                        int size = (rand() % 2) + 2; // Tamanho entre 2 e 3
                         asteroids.emplace_back(sf::Vector2f(x, y), sf::Vector2f(vx, vy), size);
                     }
                     
