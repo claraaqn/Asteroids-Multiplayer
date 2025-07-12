@@ -140,6 +140,7 @@ int main() {
     std::vector<Bullet> bullets1(1);
     std::vector<Bullet> bullets2(1);
 
+
     sf::Clock explosionClock;
     std::vector<Asteroid> asteroids;
     sf::Clock asteroidClock;
@@ -232,11 +233,13 @@ int main() {
         // Atualiza as balas do jogador 1
         for (auto& bullet : bullets1) {
             bullet.update(deltaTime);
+            bullet.shape.setFillColor(sf::Color::Blue);
         }
 
         // Atualiza as balas do jogador 2
         for (auto& bullet : bullets2) {
             bullet.update(deltaTime);
+             bullet.shape.setFillColor(sf::Color::Red);
         }
 
         sf::Event event;
@@ -293,7 +296,7 @@ int main() {
                 if (event.key.code == sf::Keyboard::Space && player1.canFire() && player1.isAlive) {
                     for (auto& bullet : bullets1) {
                         if (!bullet.isActive) {
-                            bullet.fire(player1.getFirePosition(), player1.angle, sf::Color::Green);
+                            bullet.fire(player1.getFirePosition(), player1.angle, sf::Color::Blue);
                             player1.resetFireCooldown();
                             break;
                         }
@@ -304,7 +307,7 @@ int main() {
                     player2.canFire() && player2.isAlive){               
                         for (auto& bullet : bullets2) {
                             if (!bullet.isActive) {
-                                bullet.fire(player2.getFirePosition(), player2.angle, sf::Color::Cyan);
+                                bullet.fire(player2.getFirePosition(), player2.angle, sf::Color::Red);
                                 player2.resetFireCooldown();
                                 break;
                             }

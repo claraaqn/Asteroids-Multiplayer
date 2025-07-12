@@ -23,11 +23,10 @@ Spaceship::Spaceship(sf::Vector2f startPos, float startAngle, bool player1) {
         }
     }
 
-
+    sprite.setTexture(texture);
     sprite.setScale(1.2f, 1.2f);
     // Configura a sprite
-    sprite.setTexture(texture);
-    sprite.setOrigin(bounds.width/2, bounds.height/2);
+    sprite.setOrigin(bounds.width/2 +14, bounds.height/2);
     sprite.setPosition(position);
     sprite.setRotation(angle);
     
@@ -92,8 +91,8 @@ sf::Vector2f Spaceship::getFirePosition() const {
 float rad = (sprite.getRotation() - 90.0f) * PI / 180.0f;
 
     return sf::Vector2f(
-        position.x + 25 * std::cos(rad),
-        position.y + 25 * std::sin(rad)
+        (position.x + 25 * std::cos(rad)),
+        (position.y + 25 * std::sin(rad))
     );
 
 }
