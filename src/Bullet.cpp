@@ -8,16 +8,17 @@ Bullet::Bullet() : isActive(false) {
     shape.setRadius(RADIUS);
     shape.setFillColor(sf::Color::White);
     shape.setOrigin(RADIUS, RADIUS);
-    shape.setFillColor(sf::Color::Red);
-    shape.setOutlineThickness(1.f);
-    shape.setScale(1, 1);
+    shape.setScale(1.0f, 1.0f);
     shape.setOutlineColor(sf::Color(200, 200, 200));
     isActive = false;
 }
 
+void Bullet::fire(sf::Vector2f pos, float angle, const sf::Color& color) {
+    
 void Bullet::fire(sf::Vector2f pos, float angle) {
     shape.setPosition(pos);
     float rad = (angle - 90) * PI / 180;
+    
     velocity.x = std::cos(rad) * SPEED;
     velocity.y = std::sin(rad) * SPEED;
     

@@ -145,6 +145,7 @@ int main() {
     std::vector<Bullet> bullets1(1);
     std::vector<Bullet> bullets2(1);
 
+
     sf::Clock explosionClock;
     std::vector<Asteroid> asteroids;
     sf::Clock asteroidClock;
@@ -246,11 +247,13 @@ int main() {
         // Atualiza as balas do jogador 1
         for (auto& bullet : bullets1) {
             bullet.update(deltaTime);
+            bullet.shape.setFillColor(sf::Color::Blue);
         }
 
         // Atualiza as balas do jogador 2
         for (auto& bullet : bullets2) {
             bullet.update(deltaTime);
+             bullet.shape.setFillColor(sf::Color::Red);
         }
 
         sf::Event event;
