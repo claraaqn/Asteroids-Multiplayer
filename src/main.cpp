@@ -330,102 +330,102 @@ int main() {
             }
 
             //? LÓGICA DE JOGO
-            if (!game.isGameOver()) { 
+            if (!game.isGameOver()) {
 
-                //! CONTROLES
-                //TODO: Controles do jogador 1 (Joystick 0)
-                if (player1.isAlive) {
-                    // Eixo X do analógico esquerdo para movimento lateral
-                    float joystickX = sf::Joystick::getAxisPosition(0, sf::Joystick::X);
-                    // Eixo Y do analógico esquerdo para movimento frente/trás
-                    float joystickY = sf::Joystick::getAxisPosition(0, sf::Joystick::Y);
-                    
-                    // Deadzone de 15% - precisa mover o joystick além de 15% de sua amplitude total para que o movimento seja detectado
-                     if (std::abs(joystickX) > 25.0f || std::abs(joystickY) > 25.0f) {
-                        float rotationSpeed = 2.5f; // Ajuste a sensibilidade aqui
-                        player1.angle += joystickX * rotationSpeed * deltaTime; // deltaTime para suavizar
-                        
-                        // Normaliza o ângulo entre 0-360 graus
-                        if (player1.angle > 360) player1.angle -= 360;
-                        if (player1.angle < 0) player1.angle += 360;
-                        
-                        // Atualiza a rotação visual
-                        player1.sprite.setRotation(player1.angle);
-                        
-                        // Normaliza os valores do joystick
-                        float normX = (joystickX / 100.0f) * 0.7f;
-                        float normY = (-joystickY / 100.0f) * 0.7f; //* Invertido porque em SFML, Y cresce para baixo
-                        
-                        // Calcula a direção do movimento baseado no ângulo da nave
-                        float radAngle = player1.angle * (3.14159265f / 180.0f); // Converte para radianos
-                        player1.sprite.setRotation(player1.angle);
-                        // Se você quiser movimento relativo à direção da nave (forward/backward + strafe)
-                        float forwardForce = normY * cos(radAngle) - normX * sin(radAngle);
-                        float lateralForce = normY * sin(radAngle) + normX * cos(radAngle);
-                        
-                        // Aplica as forças
-                        // Movimento frontal puro sem influência lateral
-                        player1.velocity.x += forwardForce * 0.25f;
-                        player1.velocity.y += -forwardForce * 0.25f; 
-                        // Movimento lateral puro
-                        player1.velocity.x += lateralForce * 0.25f;
-                        player1.velocity.y += lateralForce * 0.25f;
-                    }
+    //! CONTROLES
+    // --- Jogador 1 (Joystick 0) ---
+    if (sf::Joystick::isConnected(0) && player1.isAlive) {
+        float joystickX = sf::Joystick::getAxisPosition(0, sf::Joystick::X);
+        float joystickY = sf::Joystick::getAxisPosition(0, sf::Joystick::Y);
 
-                    // Botão A (0) para atirar
-                    if (sf::Joystick::isButtonPressed(0, 0) && player1.canFire()) {
-                        for (auto& bullet : bullets1) {
-                            if (!bullet.isActive) { 
-                                bullet.fire(player1.getFirePosition(), player1.angle); 
-                                player1.resetFireCooldown();
-                                activeSounds.emplace_back();
-                                activeSounds.back().setBuffer(shootBuffer);
-                                activeSounds.back().setVolume(70);
-                                activeSounds.back().play(); 
-                                break; 
-                            }
-                        }
-                    }
+        if (std::abs(joystickX) > 25.0f || std::abs(joystickY) > 25.0f) {
+            float rotationSpeed = 2.0f;
+            player1.angle += joystickX * rotationSpeed * deltaTime;
 
-                    player1.decelerate();
-                    player1.update();
+            if (player1.angle > 360) player1.angle -= 360;
+            if (player1.angle < 0) player1.angle += 360;
+
+            player1.sprite.setRotation(player1.angle);
+
+            float normX = (joystickX / 100.0f) * 0.7f;
+            float normY = (-joystickY / 100.0f) * 0.7f;
+
+            float radAngle = player1.angle * (3.14159265f / 180.0f);
+
+            float forwardForce = normY * cos(radAngle) - normX * sin(radAngle);
+            float lateralForce = normY * sin(radAngle) + normX * cos(radAngle);
+
+            player1.velocity.x += forwardForce * 0.25f;
+            player1.velocity.y += -forwardForce * 0.25f;
+            player1.velocity.x += lateralForce * 0.25f;
+            player1.velocity.y += lateralForce * 0.25f;
+        }
+
+        if (sf::Joystick::isButtonPressed(0, 0) && player1.canFire()) {
+            for (auto& bullet : bullets1) {
+                if (!bullet.isActive) {
+                    bullet.fire(player1.getFirePosition(), player1.angle);
+                    player1.resetFireCooldown();
+                    activeSounds.emplace_back();
+                    activeSounds.back().setBuffer(shootBuffer);
+                    activeSounds.back().setVolume(70);
+                    activeSounds.back().play();
+                    break;
                 }
-
-                //TODO: Controles do jogador 2 (Joystick 1) - similar ao jogador 1
-                if (player2.isAlive) {
-                    float joystickX = sf::Joystick::getAxisPosition(1, sf::Joystick::X);
-                    float joystickY = sf::Joystick::getAxisPosition(1, sf::Joystick::Y);
-                    
-                    if (std::abs(joystickX) > 25.0f || std::abs(joystickY) > 25.0f) {
-                        float normX = (joystickX / 100.0f) * 0.7f;
-                        float normY = (-joystickY / 100.0f) * 0.7f;
-                        
-                        float radAngle = player2.angle * (3.14159265f / 180.0f);
-                        
-                        float forwardForce = normY * cos(radAngle) - normX * sin(radAngle);
-                        float lateralForce = normY * sin(radAngle) + normX * cos(radAngle);
-                        
-                        player2.velocity.x += forwardForce * 0.25f;
-                        player2.velocity.y += -forwardForce * 0.25f; 
-                        player2.velocity.x += lateralForce * 0.25f;
-                        player2.velocity.y += lateralForce * 0.25f;
-
-                    }
-
-                if (sf::Joystick::isButtonPressed(1, 0) && player2.canFire()) {
-                    for (auto& bullet : bullets2) {
-                        if (!bullet.isActive) { 
-                            bullet.fire(player2.getFirePosition(), player2.angle); 
-                            player2.resetFireCooldown(); 
-                            activeSounds.emplace_back();
-                            activeSounds.back().setBuffer(shootBuffer);
-                            activeSounds.back().setVolume(70);
-                            activeSounds.back().play();
-                            break; 
-                        }
-                    }
-                }  
             }
+        }
+
+        player1.decelerate();
+        player1.update();
+    }
+
+    // --- Jogador 2 (Joystick 1) ---
+    if (sf::Joystick::isConnected(1) && player2.isAlive) {
+        float joystickX = sf::Joystick::getAxisPosition(1, sf::Joystick::X);
+        float joystickY = sf::Joystick::getAxisPosition(1, sf::Joystick::Y);
+
+        if (std::abs(joystickX) > 25.0f || std::abs(joystickY) > 25.0f) {
+            float rotationSpeed = 1.5f;
+            player2.angle += joystickX * rotationSpeed * deltaTime;
+
+            if (player2.angle > 360) player2.angle -= 360;
+            if (player2.angle < 0) player2.angle += 360;
+
+            player2.sprite.setRotation(player2.angle);
+
+            float normX = (joystickX / 100.0f) * 0.7f;
+            float normY = (-joystickY / 100.0f) * 0.7f;
+
+            float radAngle = player2.angle * (3.14159265f / 180.0f);
+
+            float forwardForce = normY * cos(radAngle) - normX * sin(radAngle);
+            float lateralForce = normY * sin(radAngle) + normX * cos(radAngle);
+
+            player2.velocity.x += forwardForce * 0.25f;
+            player2.velocity.y += -forwardForce * 0.25f;
+            player2.velocity.x += lateralForce * 0.25f;
+            player2.velocity.y += lateralForce * 0.25f;
+        }
+
+        if (sf::Joystick::isButtonPressed(1, 0) && player2.canFire()) {
+            for (auto& bullet : bullets2) {
+                if (!bullet.isActive) {
+                    bullet.fire(player2.getFirePosition(), player2.angle);
+                    player2.resetFireCooldown();
+                    activeSounds.emplace_back();
+                    activeSounds.back().setBuffer(shootBuffer);
+                    activeSounds.back().setVolume(70);
+                    activeSounds.back().play();
+                    break;
+                }
+            }
+        }
+
+        player2.decelerate();
+        player2.update();
+    }
+
+
 
                 for (auto& asteroid : asteroids) asteroid.update(deltaTime, currentTime);
                 
