@@ -42,6 +42,7 @@ GameSession::GameSession(sf::RenderWindow& window, sf::Font& font, GameMode mode
     resetGame();
 }
 
+// GameSession.cpp
 void GameSession::run() {
     sf::Clock clock;
     while (window.isOpen()) {
@@ -49,11 +50,10 @@ void GameSession::run() {
         
         handleEvents();
 
-        // Se o jogo acabou, mostramos a tela de game over e paramos por aqui
         if (gameState.isGameOver()) {
             gameOverScreen.draw(window);
             window.display();
-            continue; // Pula o resto do loop de jogo
+            continue;
         }
         
         update(deltaTime);
@@ -62,13 +62,12 @@ void GameSession::run() {
 }
 
 void GameSession::handleEvents() {
-    sf::Event event;
+    sf::Event event; // APENAS UMA DECLARAÇÃO
     while (window.pollEvent(event)) {
         if (event.type == sf::Event::Closed) {
             window.close();
         }
         
-        // Lógica de Reinício / Sair
         if (gameState.isGameOver()) {
             if ((event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::R) ||
                 (event.type == sf::Event::JoystickButtonPressed && event.joystickButton.button == 7)) {
@@ -76,20 +75,18 @@ void GameSession::handleEvents() {
             } else if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Q) {
                 window.close();
             }
-            continue; // Não processar outros eventos se o jogo acabou
+            continue;
         }
 
-        // Lógica de tiro (apenas se o jogo estiver rodando)
+        // CORRIJA AS CHAMADAS DE fire() - remova o terceiro argumento
         if (event.type == sf::Event::KeyPressed) {
             if (event.key.code == sf::Keyboard::Space && player1.canFire() && player1.isAlive) {
-                bullets1.emplace_back().fire(player1.getFirePosition(), player1.angle, sf::Color::Green);
+                bullets1.emplace_back().fire(player1.getFirePosition(), player1.angle); // 2 ARGUMENTOS
                 player1.resetFireCooldown();
-                // Tocar som de tiro...
             }
             if ((event.key.code == sf::Keyboard::Enter) && player2.canFire() && player2.isAlive && gameMode == GameMode::Multiplayer) {
-                bullets2.emplace_back().fire(player2.getFirePosition(), player2.angle, sf::Color::Cyan);
+                bullets2.emplace_back().fire(player2.getFirePosition(), player2.angle); // 2 ARGUMENTOS
                 player2.resetFireCooldown();
-                // Tocar som de tiro...
             }
         }
     }
@@ -205,7 +202,7 @@ void GameSession::processPlayerInput(float deltaTime) {
 
         if (sf::Joystick::isButtonPressed(0, 0) && player1.canFire()) {
             // **SUGESTÃO APLICADA**: Adiciona uma nova bala diretamente
-            bullets1.emplace_back().fire(player1.getFirePosition(), player1.angle, sf::Color::Green); 
+            bullets1.emplace_back().fire(player1.getFirePosition(), player1.angle); // 2 ARGUMENTOS
             player1.resetFireCooldown();
             
             activeSounds.emplace_back(shootBuffer);
@@ -244,8 +241,8 @@ void GameSession::processPlayerInput(float deltaTime) {
 
         if (sf::Joystick::isButtonPressed(1, 0) && player2.canFire()) {
             // **SUGESTÃO APLICADA**: Adiciona uma nova bala diretamente
-            bullets2.emplace_back().fire(player2.getFirePosition(), player2.angle, sf::Color::Cyan); 
-            player2.resetFireCooldown(); 
+            bullets2.emplace_back().fire(player2.getFirePosition(), player2.angle); // 2 ARGUMENTOS
+            player2.resetFireCooldown();
             
             activeSounds.emplace_back(shootBuffer);
             activeSounds.back().setVolume(70);

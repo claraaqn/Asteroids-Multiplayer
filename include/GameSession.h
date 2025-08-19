@@ -17,7 +17,7 @@ class GameSession {
 public:
     // O construtor recebe o modo de jogo para saber se cria 1 ou 2 jogadores
     GameSession(sf::RenderWindow& window, sf::Font& font, GameMode mode);
-    void run(); // O loop principal do jogo vai ficar aqui
+    void run(); 
 
 private:
     // Métodos de lógica interna
