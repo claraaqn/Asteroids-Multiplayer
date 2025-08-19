@@ -119,3 +119,7 @@ void Spaceship::reset(sf::Vector2f newPosition, float newAngle, bool player) {
     
     fireCooldown.restart();
 }
+
+sf::FloatRect Spaceship::getBounds() const {
+    return sprite.getGlobalBounds();
+}

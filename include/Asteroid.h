@@ -25,6 +25,5 @@ public:
     sf::Vector2f getPosition() const;
     float getRadius() const;
     int getSize() const ;
-
-    
+    sf::FloatRect getBounds() const;  
 };

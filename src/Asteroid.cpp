@@ -78,3 +78,7 @@ void Asteroid::draw(sf::RenderWindow& window) const {
 int Asteroid::getSize() const {
     return size;
 }
+
+sf::FloatRect Asteroid::getBounds() const {
+    return sprite.getGlobalBounds();
+}

@@ -38,3 +38,7 @@ bool Bullet::isOutOfBounds() const {
     const sf::Vector2f& pos = shape.getPosition();
     return pos.x < -50 || pos.x > WIDTH + 50 || pos.y < -50 || pos.y > HEIGHT + 50;
 }
+
+sf::FloatRect Bullet::getBounds() const {
+    return shape.getGlobalBounds();
+}
