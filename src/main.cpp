@@ -63,17 +63,47 @@ int main() {
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed) {
                 window.close();
+                break;
             }
-            selectedMode = menu.handleInput(event);
+            
+            GameMode newMode = menu.handleInput(event);
+            if (newMode != GameMode::None) {
+                selectedMode = newMode;
+                break; 
+            }
         }
-        menu.draw();
+        
+        //! TEM ERRO SÓ DESENHA SE AINDA ESTIVER NO MENU
+        if (selectedMode == GameMode::None) {
+            menu.draw();
+        } else {
+            break; // SAIR DO LOOP PRINCIPAL DO MENU
+        }
     }
 
-    //? 5. Execução do Jogo
-    if (selectedMode == GameMode::SinglePlayer || selectedMode == GameMode::Multiplayer) {
-        window.setView(gameView);
-        GameSession gameSession(window, font, selectedMode);
-        gameSession.run();
+    std::cout << "Modo selecionado: " << static_cast<int>(selectedMode) << std::endl;
+
+    //? 5. Execução do Jogo - VOLTE PARA A VERSÃO SIMPLES
+    try {
+        if (selectedMode == GameMode::SinglePlayer || selectedMode == GameMode::Multiplayer) {
+            std::cout << "Iniciando jogo no modo: " 
+                    << (selectedMode == GameMode::SinglePlayer ? "SinglePlayer" : "Multiplayer") 
+                    << std::endl;
+            
+            window.setView(gameView);
+            GameSession gameSession(window, font, selectedMode);
+            
+            std::cout << "GameSession criada, executando run()..." << std::endl;
+            gameSession.run();
+            
+            std::cout << "GameSession finalizada" << std::endl;
+        } else if (selectedMode == GameMode::Exit) {
+            std::cout << "Saindo do jogo..." << std::endl;
+            window.close();
+        }
+    } catch (const std::exception& e) {
+    std::cerr << "EXCEÇÃO: " << e.what() << std::endl;
+    return EXIT_FAILURE;
     }
     
     return 0;

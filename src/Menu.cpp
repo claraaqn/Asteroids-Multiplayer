@@ -50,7 +50,7 @@ void Menu::draw() {
 
 GameMode Menu::handleInput(sf::Event& event) {
     if (event.type == sf::Event::KeyPressed) {
-                std::cout << "Tecla Pressionada! Codigo: " << event.key.code << std::endl;
+        std::cout << "Tecla Pressionada! Codigo: " << event.key.code << std::endl;
 
         switch (event.key.code) {
             case sf::Keyboard::Up:
@@ -62,6 +62,7 @@ GameMode Menu::handleInput(sf::Event& event) {
             
             case sf::Keyboard::Return: 
                 std::cout << "Enter pressionado! Item selecionado: " << selectedItemIndex << std::endl;
+
                 if (selectedItemIndex == 0) {
                     return GameMode::SinglePlayer;
                 }
