@@ -12,6 +12,7 @@ public:
     void fire(sf::Vector2f pos, float angle);
     void update(float deltaTime);
     bool isOutOfBounds() const;
+     sf::FloatRect getBounds() const;
     
 private:
     static constexpr float SPEED = 800.0f;
