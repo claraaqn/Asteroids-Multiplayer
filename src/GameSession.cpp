@@ -100,11 +100,13 @@ void GameSession::update(float deltaTime) {
     spawnAsteroids(deltaTime);
     checkCollisions();
 
-    // Atualiza o estado do jogo (verifica se alguém morreu)
-    gameState.checkGameOver(player1.isAlive, player2.isAlive, score1, score2);
-    if(gameState.isGameOver()){
-        gameOverScreen.update(gameState.getWinner(), score1, score2);
-        gameOverScreen.setPosition(WIDTH/2, HEIGHT/2);
+    // VERIFIQUE SE O JOGO DEVE TERMINAR APENAS SE OS JOGADORES ESTIVEREM MORTOs
+    if (!player1.isAlive && (gameMode == GameMode::SinglePlayer || !player2.isAlive)) {
+        gameState.checkGameOver(player1.isAlive, player2.isAlive, score1, score2);
+        if(gameState.isGameOver()){
+            gameOverScreen.update(gameState.getWinner(), score1, score2);
+            gameOverScreen.setPosition(WIDTH/2, HEIGHT/2);
+        }
     }
 
     // Atualiza textos
@@ -172,37 +174,75 @@ void GameSession::resetGame() {
 }
 
 
-// Todas as outras lógicas (input, spawn, colisões) são movidas para cá
-// como métodos privados. Por exemplo:
 
 void GameSession::processPlayerInput(float deltaTime) {
     // --- Controles do Jogador 1 ---
     if (player1.isAlive) {
-        float joystickX = sf::Joystick::getAxisPosition(0, sf::Joystick::X);
-        float joystickY = sf::Joystick::getAxisPosition(0, sf::Joystick::Y);
+        // CONTROLES DE TECLADO (SETINHAS)
+        float keyboardX = 0.0f;
+        float keyboardY = 0.0f;
         
-        if (std::abs(joystickX) > 25.0f || std::abs(joystickY) > 25.0f) {
-            player1.angle += joystickX * 2.5f * deltaTime;
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) {
+            keyboardX = -1.0f;
+        }
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) {
+            keyboardX = 1.0f;
+        }
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up)) {
+            keyboardY = -1.0f; // Negativo porque Up deve mover para frente
+        }
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down)) {
+            keyboardY = 1.0f;
+        }
+        
+        // Se estiver usando teclado, prioriza sobre joystick
+        if (keyboardX != 0.0f || keyboardY != 0.0f) {
+            player1.angle += keyboardX * 150.0f * deltaTime; // Mais rápido com teclado
             if (player1.angle > 360) player1.angle -= 360;
             if (player1.angle < 0) player1.angle += 360;
             player1.sprite.setRotation(player1.angle);
             
-            float normX = (joystickX / 100.0f) * 0.7f;
-            float normY = (-joystickY / 100.0f) * 0.7f;
-            
             float radAngle = player1.angle * (3.14159265f / 180.0f);
-            float forwardForce = normY * cos(radAngle) - normX * sin(radAngle);
-            float lateralForce = normY * sin(radAngle) + normX * cos(radAngle);
+            player1.velocity.x += keyboardY * cos(radAngle) * 0.5f;
+            player1.velocity.y += -keyboardY * sin(radAngle) * 0.5f;
+        }
+        else {
+            // CONTROLES DE JOYSTICK (código existente)
+            float joystickX = sf::Joystick::getAxisPosition(0, sf::Joystick::X);
+            float joystickY = sf::Joystick::getAxisPosition(0, sf::Joystick::Y);
             
-            player1.velocity.x += forwardForce * 0.25f;
-            player1.velocity.y += -forwardForce * 0.25f; 
-            player1.velocity.x += lateralForce * 0.25f;
-            player1.velocity.y += lateralForce * 0.25f;
+            if (std::abs(joystickX) > 25.0f || std::abs(joystickY) > 25.0f) {
+                player1.angle += joystickX * 2.5f * deltaTime;
+                if (player1.angle > 360) player1.angle -= 360;
+                if (player1.angle < 0) player1.angle += 360;
+                player1.sprite.setRotation(player1.angle);
+                
+                float normX = (joystickX / 100.0f) * 0.7f;
+                float normY = (-joystickY / 100.0f) * 0.7f;
+                
+                float radAngle = player1.angle * (3.14159265f / 180.0f);
+                float forwardForce = normY * cos(radAngle) - normX * sin(radAngle);
+                float lateralForce = normY * sin(radAngle) + normX * cos(radAngle);
+                
+                player1.velocity.x += forwardForce * 0.25f;
+                player1.velocity.y += -forwardForce * 0.25f; 
+                player1.velocity.x += lateralForce * 0.25f;
+                player1.velocity.y += lateralForce * 0.25f;
+            }
         }
 
-        if (sf::Joystick::isButtonPressed(0, 0) && player1.canFire()) {
-            // **SUGESTÃO APLICADA**: Adiciona uma nova bala diretamente
-            bullets1.emplace_back().fire(player1.getFirePosition(), player1.angle); // 2 ARGUMENTOS
+        // TIRO COM TECLADO (Barra de Espaço)
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space) && player1.canFire()) {
+            bullets1.emplace_back().fire(player1.getFirePosition(), player1.angle);
+            player1.resetFireCooldown();
+            
+            activeSounds.emplace_back(shootBuffer);
+            activeSounds.back().setVolume(70);
+            activeSounds.back().play(); 
+        }
+        // TIRO COM JOYSTICK (código existente)
+        else if (sf::Joystick::isButtonPressed(0, 0) && player1.canFire()) {
+            bullets1.emplace_back().fire(player1.getFirePosition(), player1.angle);
             player1.resetFireCooldown();
             
             activeSounds.emplace_back(shootBuffer);
@@ -215,33 +255,71 @@ void GameSession::processPlayerInput(float deltaTime) {
     }
 
     // --- Controles do Jogador 2 ---
-    // **CORREÇÃO CRÍTICA APLICADA**: Adicionado "&& gameMode == GameMode::Multiplayer"
     if (player2.isAlive && gameMode == GameMode::Multiplayer) {
-        float joystickX = sf::Joystick::getAxisPosition(1, sf::Joystick::X);
-        float joystickY = sf::Joystick::getAxisPosition(1, sf::Joystick::Y);
+        // CONTROLES DE TECLADO PARA JOGADOR 2 (WASD ou outras teclas)
+        float keyboardX = 0.0f;
+        float keyboardY = 0.0f;
         
-        if (std::abs(joystickX) > 25.0f || std::abs(joystickY) > 25.0f) {
-            player2.angle += joystickX * 2.5f * deltaTime;
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) {
+            keyboardX = -1.0f;
+        }
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) {
+            keyboardX = 1.0f;
+        }
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::W)) {
+            keyboardY = -1.0f;
+        }
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) {
+            keyboardY = 1.0f;
+        }
+        
+        if (keyboardX != 0.0f || keyboardY != 0.0f) {
+            player2.angle += keyboardX * 150.0f * deltaTime;
             if (player2.angle > 360) player2.angle -= 360;
             if (player2.angle < 0) player2.angle += 360;
-            player2.sprite.setRotation(player2.angle); 
-            
-            float normX = (joystickX / 100.0f) * 0.7f;
-            float normY = (-joystickY / 100.0f) * 0.7f;
+            player2.sprite.setRotation(player2.angle);
             
             float radAngle = player2.angle * (3.14159265f / 180.0f);
-            float forwardForce = normY * cos(radAngle) - normX * sin(radAngle);
-            float lateralForce = normY * sin(radAngle) + normX * cos(radAngle);
+            player2.velocity.x += keyboardY * cos(radAngle) * 0.5f;
+            player2.velocity.y += -keyboardY * sin(radAngle) * 0.5f;
+        }
+        else {
+            // CONTROLES DE JOYSTICK (código existente)
+            float joystickX = sf::Joystick::getAxisPosition(1, sf::Joystick::X);
+            float joystickY = sf::Joystick::getAxisPosition(1, sf::Joystick::Y);
+            
+            if (std::abs(joystickX) > 25.0f || std::abs(joystickY) > 25.0f) {
+                player2.angle += joystickX * 2.5f * deltaTime;
+                if (player2.angle > 360) player2.angle -= 360;
+                if (player2.angle < 0) player2.angle += 360;
+                player2.sprite.setRotation(player2.angle); 
+                
+                float normX = (joystickX / 100.0f) * 0.7f;
+                float normY = (-joystickY / 100.0f) * 0.7f;
+                
+                float radAngle = player2.angle * (3.14159265f / 180.0f);
+                float forwardForce = normY * cos(radAngle) - normX * sin(radAngle);
+                float lateralForce = normY * sin(radAngle) + normX * cos(radAngle);
 
-            player2.velocity.x += forwardForce * 0.25f;
-            player2.velocity.y += -forwardForce * 0.25f; 
-            player2.velocity.x += lateralForce * 0.25f;
-            player2.velocity.y += lateralForce * 0.25f;
+                player2.velocity.x += forwardForce * 0.25f;
+                player2.velocity.y += -forwardForce * 0.25f; 
+                player2.velocity.x += lateralForce * 0.25f;
+                player2.velocity.y += lateralForce * 0.25f;
+            }
         }
 
-        if (sf::Joystick::isButtonPressed(1, 0) && player2.canFire()) {
-            // **SUGESTÃO APLICADA**: Adiciona uma nova bala diretamente
-            bullets2.emplace_back().fire(player2.getFirePosition(), player2.angle); // 2 ARGUMENTOS
+        // TIRO COM TECLADO (Enter)
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Enter) && player2.canFire()) {
+            bullets2.emplace_back().fire(player2.getFirePosition(), player2.angle);
+            player2.resetFireCooldown();
+            
+            activeSounds.emplace_back(shootBuffer);
+            activeSounds.back().setVolume(70);
+            activeSounds.back().play();
+        }
+        // TIRO COM JOYSTICK (código existente)
+        else if (sf::Joystick::isButtonPressed(1, 0) && player2.canFire()) {
+            bullets2.emplace_back().fire(player2.getFirePosition(), player2.angle);
             player2.resetFireCooldown();
             
             activeSounds.emplace_back(shootBuffer);
