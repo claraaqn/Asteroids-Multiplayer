@@ -24,6 +24,6 @@ public:
     void reset(sf::Vector2f newPosition, float newAngle, bool player);
 
 private:
-    float FIRE_COOLDOWN = 0.3f; 
+    static constexpr float FIRE_COOLDOWN = 300.0f;
     sf::Clock fireCooldown;
 };

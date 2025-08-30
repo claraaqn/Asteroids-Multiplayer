@@ -10,6 +10,8 @@ Spaceship::Spaceship(sf::Vector2f startPos, float startAngle, bool player1) {
     isAlive = true;
     isPlayer1 = player1;
     sf::FloatRect bounds = sprite.getLocalBounds();
+
+    fireCooldown.restart();
    
 
     // Carrega a textura apropriada para cada jogador
@@ -121,7 +123,7 @@ float rad = (sprite.getRotation() - 90.0f) * PI / 180.0f;
 
 }
 
-bool Spaceship::canFire  () const {
+bool Spaceship::canFire() const {
     return fireCooldown.getElapsedTime().asMilliseconds() > FIRE_COOLDOWN;
 }
 

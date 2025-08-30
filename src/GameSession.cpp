@@ -77,18 +77,6 @@ void GameSession::handleEvents() {
             }
             continue;
         }
-
-        // CORRIJA AS CHAMADAS DE fire() - remova o terceiro argumento
-        if (event.type == sf::Event::KeyPressed) {
-            if (event.key.code == sf::Keyboard::Space && player1.canFire() && player1.isAlive) {
-                bullets1.emplace_back().fire(player1.getFirePosition(), player1.angle); // 2 ARGUMENTOS
-                player1.resetFireCooldown();
-            }
-            if ((event.key.code == sf::Keyboard::Enter) && player2.canFire() && player2.isAlive && gameMode == GameMode::Multiplayer) {
-                bullets2.emplace_back().fire(player2.getFirePosition(), player2.angle); // 2 ARGUMENTOS
-                player2.resetFireCooldown();
-            }
-        }
     }
 }
 
@@ -124,7 +112,6 @@ void GameSession::render() {
 
     for (const auto& asteroid : asteroids) asteroid.draw(window);
     for (const auto& bullet : bullets1) if (bullet.isActive) window.draw(bullet.shape);
-    for (const auto& bullet : bullets2) if (bullet.isActive) window.draw(bullet.shape);
     
     if (player1.isAlive) window.draw(player1.sprite);
     if (player2.isAlive && gameMode == GameMode::Multiplayer) window.draw(player2.sprite);
@@ -169,16 +156,14 @@ void GameSession::resetGame() {
 
     asteroids.clear();
     bullets1.clear();
-    bullets2.clear();
     asteroidExplosions.clear();
 }
 
 
-
 void GameSession::processPlayerInput(float deltaTime) {
-    // --- Controles do Jogador 1 ---
+    //! --- Controles do Jogador 1 ---
     if (player1.isAlive) {
-        // CONTROLES DE TECLADO (SETINHAS)
+        //? CONTROLES DE TECLADO (SETINHAS) - ROTAÇÃO E ACELERAÇÃO
         float keyboardX = 0.0f;
         float keyboardY = 0.0f;
         
@@ -189,7 +174,7 @@ void GameSession::processPlayerInput(float deltaTime) {
             keyboardX = 1.0f;
         }
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up)) {
-            keyboardY = -1.0f; // Negativo porque Up deve mover para frente
+            keyboardY = -1.0f;
         }
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down)) {
             keyboardY = 1.0f;
@@ -197,33 +182,40 @@ void GameSession::processPlayerInput(float deltaTime) {
         
         // Se estiver usando teclado, prioriza sobre joystick
         if (keyboardX != 0.0f || keyboardY != 0.0f) {
-            player1.angle += keyboardX * 150.0f * deltaTime; // Mais rápido com teclado
-            if (player1.angle > 360) player1.angle -= 360;
-            if (player1.angle < 0) player1.angle += 360;
-            player1.sprite.setRotation(player1.angle);
+            float normX = keyboardX * 0.4f;
+            float normY = keyboardY * 0.4f;
             
+            // Calcula a direção do movimento baseado no ângulo atual da nave
             float radAngle = player1.angle * (3.14159265f / 180.0f);
-            player1.velocity.x += keyboardY * cos(radAngle) * 0.5f;
-            player1.velocity.y += -keyboardY * sin(radAngle) * 0.5f;
+            
+            // Movimento relativo à direção da nave (forward/backward + strafe)
+            float forwardForce = normY * cos(radAngle) - normX * sin(radAngle);
+            float lateralForce = normY * sin(radAngle) + normX * cos(radAngle);
+            
+            // Aplica as forças
+            player1.velocity.x += forwardForce * 0.25f;
+            player1.velocity.y += -forwardForce * 0.25f; 
+            player1.velocity.x += lateralForce * 0.25f;
+            player1.velocity.y += lateralForce * 0.25f;
         }
         else {
-            // CONTROLES DE JOYSTICK (código existente)
+            //? CONTROLES DE JOYSTICK - MOVIMENTO DIRECIONAL
             float joystickX = sf::Joystick::getAxisPosition(0, sf::Joystick::X);
             float joystickY = sf::Joystick::getAxisPosition(0, sf::Joystick::Y);
             
             if (std::abs(joystickX) > 25.0f || std::abs(joystickY) > 25.0f) {
-                player1.angle += joystickX * 2.5f * deltaTime;
-                if (player1.angle > 360) player1.angle -= 360;
-                if (player1.angle < 0) player1.angle += 360;
-                player1.sprite.setRotation(player1.angle);
+                // Para joystick, não rotaciona automaticamente - usa movimento direcional
+                float normX = (joystickX / 100.0f) * 0.4f;
+                float normY = (-joystickY / 100.0f) * 0.4f;
                 
-                float normX = (joystickX / 100.0f) * 0.7f;
-                float normY = (-joystickY / 100.0f) * 0.7f;
-                
+                // Calcula a direção do movimento baseado no ângulo atual da nave
                 float radAngle = player1.angle * (3.14159265f / 180.0f);
+                
+                // Movimento relativo à direção da nave (forward/backward + strafe)
                 float forwardForce = normY * cos(radAngle) - normX * sin(radAngle);
                 float lateralForce = normY * sin(radAngle) + normX * cos(radAngle);
                 
+                // Aplica as forças
                 player1.velocity.x += forwardForce * 0.25f;
                 player1.velocity.y += -forwardForce * 0.25f; 
                 player1.velocity.x += lateralForce * 0.25f;
@@ -238,97 +230,20 @@ void GameSession::processPlayerInput(float deltaTime) {
             
             activeSounds.emplace_back(shootBuffer);
             activeSounds.back().setVolume(70);
-            activeSounds.back().play(); 
+            activeSounds.back().play();
         }
-        // TIRO COM JOYSTICK (código existente)
-        else if (sf::Joystick::isButtonPressed(0, 0) && player1.canFire()) {
+        // TIRO COM JOYSTICK
+        if (sf::Joystick::isButtonPressed(0, 0) && player1.canFire()) {
             bullets1.emplace_back().fire(player1.getFirePosition(), player1.angle);
             player1.resetFireCooldown();
             
             activeSounds.emplace_back(shootBuffer);
             activeSounds.back().setVolume(70);
-            activeSounds.back().play(); 
+            activeSounds.back().play();
         }
 
         player1.decelerate();
         player1.update();
-    }
-
-    // --- Controles do Jogador 2 ---
-    if (player2.isAlive && gameMode == GameMode::Multiplayer) {
-        // CONTROLES DE TECLADO PARA JOGADOR 2 (WASD ou outras teclas)
-        float keyboardX = 0.0f;
-        float keyboardY = 0.0f;
-        
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) {
-            keyboardX = -1.0f;
-        }
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) {
-            keyboardX = 1.0f;
-        }
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::W)) {
-            keyboardY = -1.0f;
-        }
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) {
-            keyboardY = 1.0f;
-        }
-        
-        if (keyboardX != 0.0f || keyboardY != 0.0f) {
-            player2.angle += keyboardX * 150.0f * deltaTime;
-            if (player2.angle > 360) player2.angle -= 360;
-            if (player2.angle < 0) player2.angle += 360;
-            player2.sprite.setRotation(player2.angle);
-            
-            float radAngle = player2.angle * (3.14159265f / 180.0f);
-            player2.velocity.x += keyboardY * cos(radAngle) * 0.5f;
-            player2.velocity.y += -keyboardY * sin(radAngle) * 0.5f;
-        }
-        else {
-            // CONTROLES DE JOYSTICK (código existente)
-            float joystickX = sf::Joystick::getAxisPosition(1, sf::Joystick::X);
-            float joystickY = sf::Joystick::getAxisPosition(1, sf::Joystick::Y);
-            
-            if (std::abs(joystickX) > 25.0f || std::abs(joystickY) > 25.0f) {
-                player2.angle += joystickX * 2.5f * deltaTime;
-                if (player2.angle > 360) player2.angle -= 360;
-                if (player2.angle < 0) player2.angle += 360;
-                player2.sprite.setRotation(player2.angle); 
-                
-                float normX = (joystickX / 100.0f) * 0.7f;
-                float normY = (-joystickY / 100.0f) * 0.7f;
-                
-                float radAngle = player2.angle * (3.14159265f / 180.0f);
-                float forwardForce = normY * cos(radAngle) - normX * sin(radAngle);
-                float lateralForce = normY * sin(radAngle) + normX * cos(radAngle);
-
-                player2.velocity.x += forwardForce * 0.25f;
-                player2.velocity.y += -forwardForce * 0.25f; 
-                player2.velocity.x += lateralForce * 0.25f;
-                player2.velocity.y += lateralForce * 0.25f;
-            }
-        }
-
-        // TIRO COM TECLADO (Enter)
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Enter) && player2.canFire()) {
-            bullets2.emplace_back().fire(player2.getFirePosition(), player2.angle);
-            player2.resetFireCooldown();
-            
-            activeSounds.emplace_back(shootBuffer);
-            activeSounds.back().setVolume(70);
-            activeSounds.back().play();
-        }
-        // TIRO COM JOYSTICK (código existente)
-        else if (sf::Joystick::isButtonPressed(1, 0) && player2.canFire()) {
-            bullets2.emplace_back().fire(player2.getFirePosition(), player2.angle);
-            player2.resetFireCooldown();
-            
-            activeSounds.emplace_back(shootBuffer);
-            activeSounds.back().setVolume(70);
-            activeSounds.back().play();
-        } 
-        
-        player2.decelerate();
-        player2.update();
     }
 }
 
@@ -399,10 +314,6 @@ void GameSession::checkCollisions() {
             player1.isAlive = false; // "Mata" o jogador 1
             // TODO: Tocar som de morte do jogador
         }
-        if (gameMode == GameMode::Multiplayer && player2.isAlive && player2.getBounds().intersects(asteroids[i].getBounds())) {
-            player2.isAlive = false; // "Mata" o jogador 2
-            // TODO: Tocar som de morte do jogador
-        }
 
         // --- 2. Colisão Asteroide vs. Balas ---
         // Balas do Jogador 1
@@ -413,17 +324,6 @@ void GameSession::checkCollisions() {
                 goto next_asteroid; // Pula para o próximo asteroide, pois este foi destruído
             }
         }
-
-        // Balas do Jogador 2 (apenas em multiplayer)
-        if (gameMode == GameMode::Multiplayer) {
-            for (auto& bullet : bullets2) {
-                if (bullet.isActive && bullet.getBounds().intersects(asteroids[i].getBounds())) {
-                    bullet.isActive = false;
-                    destroyAsteroid(i, score2); // Chama nossa função auxiliar!
-                    goto next_asteroid; // Pula para o próximo asteroide
-                }
-            }
-        }
     }
     next_asteroid:; // Rótulo para o goto
 }
@@ -431,16 +331,13 @@ void GameSession::checkCollisions() {
 void GameSession::updateGameObjects(float deltaTime) {
     starfield.update(deltaTime);
     if (player1.isAlive) player1.update();
-    if (player2.isAlive) player2.update();
 
     for (auto& bullet : bullets1) bullet.update(deltaTime);
-    for (auto& bullet : bullets2) bullet.update(deltaTime);
     for (auto& asteroid : asteroids) asteroid.update(deltaTime, gameTime);
     for (auto& explosion : asteroidExplosions) explosion.timer += deltaTime;
 
     // Limpeza de objetos inativos (balas, explosões)
     bullets1.erase(std::remove_if(bullets1.begin(), bullets1.end(), [](const Bullet& b){ return !b.isActive; }), bullets1.end());
-    bullets2.erase(std::remove_if(bullets2.begin(), bullets2.end(), [](const Bullet& b){ return !b.isActive; }), bullets2.end());
     asteroidExplosions.erase(std::remove_if(asteroidExplosions.begin(), asteroidExplosions.end(), [](const AsteroidExplosion& e){ return e.timer >= 0.3f; }), asteroidExplosions.end());
 }
 
