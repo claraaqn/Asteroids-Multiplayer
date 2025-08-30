@@ -146,12 +146,14 @@ void GameSession::resetGame() {
     gameTime = 0.0f;
     gameClock.restart();
 
-    player1.reset(sf::Vector2f(WIDTH / 4, HEIGHT - 40), 0, true);
     if (gameMode == GameMode::Multiplayer) {
+        player1.reset(sf::Vector2f(WIDTH / 4, HEIGHT - 40), 0, true);
         player2.reset(sf::Vector2f(3 * WIDTH / 4, HEIGHT - 40), 0, false);
+        player2.isAlive = true;
     } else {
-        player1.reset(sf::Vector2f(WIDTH / 2, HEIGHT - 40), 0, true); // Centraliza no single player
-        player2.isAlive = false;
+        // Singleplayer: centraliza o jogador 1
+        player1.reset(sf::Vector2f(WIDTH / 2, HEIGHT - 40), 0, true);
+        player2.isAlive = false; // Garante que o jogador 2 está inativo
     }
 
     asteroids.clear();
