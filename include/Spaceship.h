@@ -12,6 +12,7 @@ public:
     bool isAlive;
     bool isPlayer1;
     float fireCooldownMax;
+    sf::FloatRect getBounds() const;
 
     Spaceship(sf::Vector2f startPos, float startAngle, bool player1);
     void update();
@@ -23,6 +24,6 @@ public:
     void reset(sf::Vector2f newPosition, float newAngle, bool player);
 
 private:
-    float FIRE_COOLDOWN = 0.3f; 
+    static constexpr float FIRE_COOLDOWN = 300.0f;
     sf::Clock fireCooldown;
 };
