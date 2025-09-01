@@ -11,7 +11,8 @@
 #include "AsteroidExplosion.h"
 #include "Menu.h" // Para o GameMode
 #include "GameOverScreen.h"
-#include "Game.h" // Para o estado de Game Over
+#include "Game.h" 
+#include "SuperShot.h" 
 
 class GameSession {
 public:
@@ -68,4 +69,10 @@ private:
 
     // Tela de Game Over
     GameOverScreen gameOverScreen;
+
+    // Sistema de supertiro
+    SuperShot superShot1;  // SuperShot do jogador 1
+    SuperShot superShot2;  // SuperShot do jogador 2
+    sf::Text superShotText1;
+    sf::Text superShotText2;
 };
