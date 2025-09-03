@@ -33,6 +33,17 @@ GameSession::GameSession(sf::RenderWindow& window, sf::Font& font, GameMode mode
     scoreText2.setCharacterSize(20);
     scoreText2.setFillColor(sf::Color::Cyan);
     scoreText2.setPosition(WIDTH - 100, 10);
+
+    //! Configura textos de supertiro
+    superShotText1.setFont(font);
+    superShotText1.setCharacterSize(20);
+    superShotText1.setFillColor(sf::Color::Yellow);
+    superShotText1.setPosition(10, 40);
+
+    superShotText2.setFont(font);
+    superShotText2.setCharacterSize(20);
+    superShotText2.setFillColor(sf::Color::Yellow);
+    superShotText2.setPosition(WIDTH - 150, 40);
     
     // Se for Single Player, "desativa" o jogador 2
     if (gameMode == GameMode::SinglePlayer) {
@@ -97,6 +108,14 @@ void GameSession::update(float deltaTime) {
         }
     }
 
+    //! Atualiza supertiros disponíveis
+    superShot1.addShotsBasedOnScore(score1);
+    superShot2.addShotsBasedOnScore(score2);
+
+    //! Atualiza textos
+    superShotText1.setString("Super: " + std::to_string(superShot1.getAvailableShots()));
+    superShotText2.setString("Super: " + std::to_string(superShot2.getAvailableShots()));
+
     // Atualiza textos
     scoreText1.setString("P1: " + std::to_string(score1));
     scoreText2.setString("P2: " + std::to_string(score2));
@@ -144,6 +163,8 @@ void GameSession::resetGame() {
     score1 = 0;
     score2 = 0;
     gameTime = 0.0f;
+    superShot1.reset(); 
+    superShot2.reset();
     gameClock.restart();
 
     if (gameMode == GameMode::Multiplayer) {
@@ -226,13 +247,17 @@ void GameSession::processPlayerInput(float deltaTime) {
         }
 
         // TIRO COM TECLADO (Barra de Espaço)
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space) && player1.canFire()) {
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Enter) && player1.canFire()) {
             bullets1.emplace_back().fire(player1.getFirePosition(), player1.angle);
             player1.resetFireCooldown();
             
             activeSounds.emplace_back(shootBuffer);
             activeSounds.back().setVolume(70);
             activeSounds.back().play();
+        }
+        //! SUPERTIRO COM TECLADO (Shift)
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::RShift)) {
+            superShot1.fire(player1, bullets1, score1);
         }
         // TIRO COM JOYSTICK
         if (sf::Joystick::isButtonPressed(0, 0) && player1.canFire()) {
@@ -242,6 +267,10 @@ void GameSession::processPlayerInput(float deltaTime) {
             activeSounds.emplace_back(shootBuffer);
             activeSounds.back().setVolume(70);
             activeSounds.back().play();
+        }
+        //! SUPERTIRO COM JOYSTICK (B)
+        if (sf::Joystick::isButtonPressed(0, 1)) {
+            superShot1.fire(player1, bullets1, score1);
         }
 
         player1.decelerate();
