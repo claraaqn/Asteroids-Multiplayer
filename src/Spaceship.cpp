@@ -10,6 +10,8 @@ Spaceship::Spaceship(sf::Vector2f startPos, float startAngle, bool player1) {
     isAlive = true;
     isPlayer1 = player1;
     sf::FloatRect bounds = sprite.getLocalBounds();
+
+    fireCooldown.restart();
    
 
     // Carrega a textura apropriada para cada jogador
@@ -39,26 +41,27 @@ void Spaceship::update() {
     // Atualiza posição
     position += velocity;
     
-    // Obtém as dimensões reais da sprite (já considerando escala e rotação)
+    // Obtém as dimensões reais da sprite
     sf::FloatRect globalBounds = sprite.getGlobalBounds();
     float spriteWidth = globalBounds.width;
     float spriteHeight = globalBounds.height;
     
-    // Margem de segurança (ajuste conforme necessário)
-    const float margin = 5.0f; 
+    const float margin = 5.0f;
 
-    // Limites para o jogador 1 (lado esquerdo)
+    // MODIFICAÇÃO: Jogador 1 pode se mover pela tela inteira
+    // Jogador 2 (se existir) fica restrito à metade direita
     if (isPlayer1) {
+        // Jogador 1: sempre pode usar a tela inteira
         if (position.x < spriteWidth/2 + margin) {
             position.x = spriteWidth/2 + margin;
             velocity.x = 0;
         }
-        if (position.x > WIDTH/2 - spriteWidth/2 - margin) {
-            position.x = WIDTH/2 - spriteWidth/2 - margin;
+        if (position.x > WIDTH - spriteWidth/2 - margin) {
+            position.x = WIDTH - spriteWidth/2 - margin;
             velocity.x = 0;
         }
     } 
-    // Limites para o jogador 2 (lado direito)
+    // Jogador 2 (só deve existir no multiplayer)
     else {
         if (position.x < WIDTH/2 + spriteWidth/2 + margin) {
             position.x = WIDTH/2 + spriteWidth/2 + margin;
@@ -80,7 +83,6 @@ void Spaceship::update() {
         velocity.y = 0;
     }
 
-    // Atualiza a sprite
     sprite.setPosition(position);
     sprite.setRotation(angle);
 }
@@ -121,7 +123,7 @@ float rad = (sprite.getRotation() - 90.0f) * PI / 180.0f;
 
 }
 
-bool Spaceship::canFire  () const {
+bool Spaceship::canFire() const {
     return fireCooldown.getElapsedTime().asMilliseconds() > FIRE_COOLDOWN;
 }
 
