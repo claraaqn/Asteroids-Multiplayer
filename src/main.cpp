@@ -8,6 +8,8 @@
 
 using namespace GameConstants;
 
+
+
 int main() {
     srand(static_cast<unsigned int>(time(NULL)));
 
@@ -20,31 +22,32 @@ int main() {
 
     //? 1.2 Configurar o View para a proporção
     sf::View gameView;
-    gameView.setSize(WIDTH, HEIGHT);
     gameView.setCenter(WIDTH / 2.0f, HEIGHT / 2.0f);
 
-    //? 2 Calculo do View Port
-    float screenWidth = desktop.width;
-    float screenHeight = desktop.height;
 
-    float screenAspectRatio = screenWidth / screenHeight;
+    float screenAspectRatio = (float)desktop.width / (float)desktop.height;
     float gameAspectRatio = (float)WIDTH / (float)HEIGHT;
 
-    float viewportX, viewportY, viewportWidth, viewportHeight;
-
+    // Se a tela for mais larga que o jogo (ex: monitor ultrawide)
     if (screenAspectRatio > gameAspectRatio) {
-        viewportWidth = gameAspectRatio / screenAspectRatio;
-        viewportHeight = 1.0f;
-        viewportX = (1.0f - viewportWidth) / 2.0f;
-        viewportY = 0.0f;
-    } else {
-        viewportWidth = 1.0f;
-        viewportHeight = screenAspectRatio / gameAspectRatio;
-        viewportX = 0.0f;
-        viewportY = (1.0f - viewportHeight) / 2.0f;
+        // Mantenha a altura do jogo e aumente a largura
+        float newWidth = HEIGHT * screenAspectRatio;
+        gameView.setSize(newWidth, HEIGHT);
     }
-    gameView.setViewport(sf::FloatRect(viewportX, viewportY, viewportWidth, viewportHeight));
+    // Se a tela for mais alta que o jogo (ex: monitor em modo retrato)
+    else {
+        // Mantenha a largura do jogo e aumente a altura
+        float newHeight = WIDTH / screenAspectRatio;
+        gameView.setSize(WIDTH, newHeight);
+    }
+    // O viewport continua sendo 100% da janela, pois não há barras pretas
+    gameView.setViewport(sf::FloatRect(0, 0, 1, 1));
 
+
+    // 3. View para a INTERFACE/HUD (fixa no tamanho da tela)
+    sf::View hudView;
+    hudView.setSize(desktop.width, desktop.height);
+    hudView.setCenter(desktop.width / 2.0f, desktop.height / 2.0f);
 
     //? 3. CARREGA A FONTE
     sf::Font font;
@@ -91,7 +94,7 @@ int main() {
                     << std::endl;
             
             window.setView(gameView);
-            GameSession gameSession(window, font, selectedMode);
+            GameSession gameSession(window, font, selectedMode, gameView, hudView);
             
             std::cout << "GameSession criada, executando run()..." << std::endl;
             gameSession.run();
