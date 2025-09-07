@@ -26,7 +26,7 @@ GameSession::GameSession(sf::RenderWindow& window, sf::Font& font, GameMode mode
 
     // Configura textos de score
     scoreText1.setFont(font);
-    scoreText1.setCharacterSize(20);
+    scoreText1.setCharacterSize(30);
     scoreText1.setFillColor(sf::Color::Green);
     scoreText1.setPosition(10, 10);
 
