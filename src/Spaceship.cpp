@@ -26,7 +26,7 @@ Spaceship::Spaceship(sf::Vector2f startPos, float startAngle, bool player1) {
     }
 
     sprite.setTexture(texture);
-    sprite.setScale(1.2f, 1.2f);
+    sprite.setScale(SCALE_FACTOR, SCALE_FACTOR);
     // Configura a sprite
     sprite.setOrigin(bounds.width/2 +14, bounds.height/2);
     sprite.setPosition(position);
