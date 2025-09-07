@@ -5,9 +5,10 @@
 
 using namespace GameConstants;
 
+
 // O construtor inicializa TUDO que era criado no main
-GameSession::GameSession(sf::RenderWindow& window, sf::Font& font, GameMode mode)
-    : window(window), font(font), gameMode(mode),
+GameSession::GameSession(sf::RenderWindow& window, sf::Font& font, GameMode mode, const sf::View& gameView, const sf::View& hudView)
+    : window(window), font(font), gameMode(mode), gameView(gameView), hudView(hudView),
       spawnOnLeft(true),
       player1(sf::Vector2f(WIDTH / 4, HEIGHT - 40), 0, true),
       player2(sf::Vector2f(3 * WIDTH / 4, HEIGHT - 40), 0, false),
@@ -123,37 +124,10 @@ void GameSession::update(float deltaTime) {
 
 void GameSession::render() {
     window.clear(sf::Color::Black);
-    
-    starfield.draw(window);
-    if (gameMode == GameMode::Multiplayer) {
-        window.draw(divider);
-    }
-
-    for (const auto& asteroid : asteroids) asteroid.draw(window);
-    for (const auto& bullet : bullets1) if (bullet.isActive) window.draw(bullet.shape);
-    
-    if (player1.isAlive) window.draw(player1.sprite);
-    if (player2.isAlive && gameMode == GameMode::Multiplayer) window.draw(player2.sprite);
-    
-    // Desenhar explosões (sua lógica lambda pode vir para cá)
-    for(auto& explosion : asteroidExplosions) { 
-        float progress = explosion.timer / 0.3f;
-        if (progress >= 1.0f) continue;
-
-        // Anima o tamanho e a transparência
-        float scale = 1.0f + progress * 2.0f;
-        float alpha = 255.0f * (1.0f - progress);
-
-        sf::CircleShape explosionShape(explosion.originalSize * 10.0f * scale);
-        explosionShape.setOrigin(explosionShape.getRadius(), explosionShape.getRadius());
-        explosionShape.setPosition(explosion.position);
-        explosionShape.setFillColor(sf::Color(255, 255, 255, static_cast<sf::Uint8>(alpha)));
-
-        window.draw(explosionShape);
-     }
-
+     renderGame(); // Desenha o jogo
+    renderHud();  // D
     window.draw(scoreText1);
-    if(gameMode == GameMode::Multiplayer) window.draw(scoreText2);
+
     
     window.display();
 }
@@ -411,5 +385,34 @@ void GameSession::destroyAsteroid(size_t index, int& playerScore) {
             sf::Vector2f velocity(std::cos(angle) * 75.f, std::sin(angle) * 75.f);
             asteroids.emplace_back(position, velocity, size - 1);
         }
+    }
+}
+
+// Desenha tudo que pertence ao mundo do jogo
+void GameSession::renderGame() {
+    window.setView(gameView); // <-- USA A VIEW DO JOGO
+
+    starfield.draw(window);
+    if (gameMode == GameMode::Multiplayer) {
+        window.draw(divider);
+    }
+    for (const auto& asteroid : asteroids) asteroid.draw(window);
+    for (const auto& bullet : bullets1) if (bullet.isActive) window.draw(bullet.shape);
+
+    if (player1.isAlive) window.draw(player1.sprite);
+
+
+}
+
+// Desenha tudo que pertence à interface
+void GameSession::renderHud() {
+    window.setView(hudView); // <-- USA A VIEW DA HUD
+
+    window.draw(scoreText1);
+
+    // Se o jogo acabou, a tela de GameOver também é parte da HUD
+    if (gameState.isGameOver()) {
+        gameOverScreen.setPosition(WIDTH/2, HEIGHT/2); // Centraliza na tela
+        gameOverScreen.draw(window);
     }
 }

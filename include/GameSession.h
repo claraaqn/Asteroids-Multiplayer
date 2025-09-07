@@ -17,7 +17,7 @@
 class GameSession {
 public:
     // O construtor recebe o modo de jogo para saber se cria 1 ou 2 jogadores
-    GameSession(sf::RenderWindow& window, sf::Font& font, GameMode mode);
+    GameSession(sf::RenderWindow& window, sf::Font& font, GameMode mode, const sf::View& gameView, const sf::View& hudView);
     void run(); 
 
 private:
@@ -26,7 +26,8 @@ private:
     void update(float deltaTime);
     void render();
     void resetGame();
-
+    void renderGame();
+    void renderHud();
     // Métodos de lógica de jogo
     void processPlayerInput(float deltaTime);
     void spawnAsteroids(float deltaTime);
@@ -38,6 +39,8 @@ private:
     sf::RenderWindow& window;
     sf::Font& font;
     GameMode gameMode;
+    sf::View gameView; // Armazena a view do jogo
+    sf::View hudView;
     Game gameState; // Gerencia o estado de game over
      // Relógio para controlar o tempo entre spawns
     bool spawnOnLeft;
