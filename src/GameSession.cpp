@@ -18,7 +18,8 @@ GameSession::GameSession(sf::RenderWindow& window, sf::Font& font, GameMode mode
     // Carrega sons
     if (!shootBuffer.loadFromFile("assets/sound/laser1.wav")) exit(1);
     if (!explosionBuffer.loadFromFile("assets/sound/explosion.wav")) exit(1);
-    
+
+
     // Configura o divisor (só para modo multiplayer)
     divider.setSize(sf::Vector2f(2, HEIGHT));
     divider.setFillColor(sf::Color::White);
@@ -59,7 +60,7 @@ void GameSession::run() {
     sf::Clock clock;
     while (window.isOpen()) {
         float deltaTime = clock.restart().asSeconds();
-        
+
         handleEvents();
 
         if (gameState.isGameOver()) {
@@ -172,9 +173,18 @@ void GameSession::processPlayerInput(float deltaTime) {
         }
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up)) {
             keyboardY = -1.0f;
+            player1.setAccelerating(true);
         }
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down)) {
+       if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down)) {
             keyboardY = 1.0f;
+        }
+
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up) || sf::Keyboard::isKeyPressed(sf::Keyboard::Down)) {
+           std::cout<< "tecla cima ou baixo clicado" << std::endl;
+                player1.setAccelerating(true);
+
+        } else {
+            player1.setAccelerating(false);
         }
         
         // Se estiver usando teclado, prioriza sobre joystick
@@ -248,7 +258,7 @@ void GameSession::processPlayerInput(float deltaTime) {
         }
 
         player1.decelerate();
-        player1.update();
+        player1.update(deltaTime);
     }
 }
 
@@ -348,7 +358,7 @@ void GameSession::checkCollisions() {
 
 void GameSession::updateGameObjects(float deltaTime) {
     starfield.update(deltaTime);
-    if (player1.isAlive) player1.update();
+    if (player1.isAlive) player1.update(deltaTime);
 
     for (auto& bullet : bullets1) bullet.update(deltaTime);
     for (auto& asteroid : asteroids) asteroid.update(deltaTime, gameTime);
@@ -399,7 +409,10 @@ void GameSession::renderGame() {
     for (const auto& asteroid : asteroids) asteroid.draw(window);
     for (const auto& bullet : bullets1) if (bullet.isActive) window.draw(bullet.shape);
 
-    if (player1.isAlive) window.draw(player1.sprite);
+    if (player1.isAlive){
+        window.draw(player1.sprite);
+        player1.draw(window);
+    }
 
 
 }
