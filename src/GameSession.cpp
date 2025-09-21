@@ -8,13 +8,24 @@ using namespace GameConstants;
 
 // O construtor inicializa TUDO que era criado no main
 GameSession::GameSession(sf::RenderWindow& window, sf::Font& font, GameMode mode, const sf::View& gameView, const sf::View& hudView)
-    : window(window), font(font), gameMode(mode), gameView(gameView), hudView(hudView),
+    : window(window), 
+      font(font), 
+      gameMode(mode), 
+      gameView(gameView), 
+      hudView(hudView), // hudView primeiro
+      nameInputScreen(window, font),
+      nameEntered(false),
+      currentPlayerName(""),
+      highScoreDB(),
       spawnOnLeft(true),
       player1(sf::Vector2f(WIDTH / 4, HEIGHT - 40), 0, true),
       player2(sf::Vector2f(3 * WIDTH / 4, HEIGHT - 40), 0, false),
       starfield(200, WIDTH, HEIGHT),
-      score1(0), score2(0), gameTime(0.0f), gameOverScreen(font)
+      score1(0), score2(0), gameTime(0.0f),
+      gameOverScreen(font, highScoreDB)
 {
+
+    highScoreDB.initialize();
     // Carrega sons
     if (!shootBuffer.loadFromFile("assets/sound/laser1.wav")) exit(1);
     if (!explosionBuffer.loadFromFile("assets/sound/explosion.wav")) exit(1);
@@ -55,13 +66,39 @@ GameSession::GameSession(sf::RenderWindow& window, sf::Font& font, GameMode mode
     resetGame();
 }
 
-// GameSession.cpp
+void GameSession::setPlayerName(const std::string& name) {
+    currentPlayerName = name;
+    nameEntered = true; // Marca que o nome já foi inserido
+}
+
 void GameSession::run() {
     sf::Clock clock;
+    
+    // Só pede o nome se não tiver sido definido
+    if (!nameEntered) {
+        nameInputScreen.activate();
+    }
+    
     while (window.isOpen()) {
         float deltaTime = clock.restart().asSeconds();
 
         handleEvents();
+
+        // Fase de entrada do nome (só se não tiver nome ainda)
+        if (!nameEntered && nameInputScreen.isActive()) {
+            window.clear(sf::Color::Black);
+            nameInputScreen.draw();
+            window.display();
+            continue;
+        }
+        else if (!nameEntered) {
+            // Nome foi inserido, armazena
+            currentPlayerName = nameInputScreen.getPlayerName();
+            if (currentPlayerName.empty()) {
+                currentPlayerName = "Player";
+            }
+            nameEntered = true;
+        }
 
         if (gameState.isGameOver()) {
             gameOverScreen.draw(window);
@@ -74,11 +111,25 @@ void GameSession::run() {
     }
 }
 
+void GameSession::gameOver(int finalScore) {
+    // Salva a pontuação no banco de dados
+    highScoreDB.addHighScore(currentPlayerName, finalScore, gameMode);
+    
+    // Atualiza a exibição dos highscores
+    gameOverScreen.refreshHighScores(gameMode);
+}
+
 void GameSession::handleEvents() {
-    sf::Event event; // APENAS UMA DECLARAÇÃO
+    sf::Event event;
     while (window.pollEvent(event)) {
         if (event.type == sf::Event::Closed) {
             window.close();
+        }
+        
+        // Se estiver na tela de entrada de nome, processa eventos lá
+        if (nameInputScreen.isActive()) {
+            nameInputScreen.handleEvent(event);
+            continue;
         }
         
         if (gameState.isGameOver()) {
@@ -105,8 +156,10 @@ void GameSession::update(float deltaTime) {
     if (!player1.isAlive && (gameMode == GameMode::SinglePlayer || !player2.isAlive)) {
         gameState.checkGameOver(player1.isAlive, player2.isAlive, score1, score2);
         if(gameState.isGameOver()){
-            gameOverScreen.update(gameState.getWinner(), score1, score2);
+            gameOverScreen.update(gameState.getWinner(), score1, score2, gameMode);
             gameOverScreen.setPosition(WIDTH/2, HEIGHT/2);
+            int finalScore = (gameState.getWinner() == 1) ? score1 : score2;
+            gameOver(finalScore);
         }
     }
 
@@ -156,7 +209,6 @@ void GameSession::resetGame() {
     bullets1.clear();
     asteroidExplosions.clear();
 }
-
 
 void GameSession::processPlayerInput(float deltaTime) {
     //! --- Controles do Jogador 1 ---
@@ -331,8 +383,6 @@ void GameSession::spawnAsteroids(float deltaTime) {
     }
 }
 
-// GameSession.cpp
-
 void GameSession::checkCollisions() {
     // Usamos um laço 'for' com índice porque vamos modificar o vetor 'asteroids'
     for (size_t i = 0; i < asteroids.size(); ++i) {
@@ -398,7 +448,6 @@ void GameSession::destroyAsteroid(size_t index, int& playerScore) {
     }
 }
 
-// Desenha tudo que pertence ao mundo do jogo
 void GameSession::renderGame() {
     window.setView(gameView); // <-- USA A VIEW DO JOGO
 
@@ -417,15 +466,16 @@ void GameSession::renderGame() {
 
 }
 
-// Desenha tudo que pertence à interface
 void GameSession::renderHud() {
-    window.setView(hudView); // <-- USA A VIEW DA HUD
+    window.setView(hudView); 
 
     window.draw(scoreText1);
+    window.draw(scoreText2);
+    window.draw(superShotText1);
+    window.draw(superShotText2);
 
     // Se o jogo acabou, a tela de GameOver também é parte da HUD
     if (gameState.isGameOver()) {
-        gameOverScreen.setPosition(WIDTH/2, HEIGHT/2); // Centraliza na tela
         gameOverScreen.draw(window);
     }
 }

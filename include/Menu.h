@@ -2,13 +2,7 @@
 #include <SFML/Graphics.hpp>
 #include "GameConstants.h"
 #include <iostream>
-
-enum class GameMode {
-    None, 
-    SinglePlayer, 
-    Multiplayer, 
-    Exit
-};
+#include "GameMode.h"
 
 class Menu {
 public:
