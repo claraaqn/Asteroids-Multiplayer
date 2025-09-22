@@ -22,7 +22,7 @@ public:
         return true;
     }
     
-    void createTable() override {
+    void createTable() {
         sqlite3* db;
         if (sqlite3_open(testDbPath.c_str(), &db) == SQLITE_OK) {
             const char* sql = "CREATE TABLE IF NOT EXISTS highscores ("

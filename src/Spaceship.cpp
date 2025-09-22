@@ -70,7 +70,6 @@ void Spaceship::setAccelerating(bool accelerating) {
 }
 
 void Spaceship::draw(sf::RenderWindow& window) {
-    std::cout << "2. [DRAW] Dentro de Spaceship::draw(). Valor de isAccelerating: " << isAccelerating << "\n";
     // Primeiro, desenha a própria nave
     window.draw(sprite);
 

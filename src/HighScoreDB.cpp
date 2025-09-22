@@ -4,12 +4,10 @@
 #include <iomanip>
 #include <sstream>
 
-// Adicione esta linha no início do arquivo
-using GameMode = ::GameMode;  // Para evitar conflitos
+using GameMode = ::GameMode;
 
 HighScoreDB::HighScoreDB() : dbPath("highscores.db") {}
 
-HighScoreDB::~HighScoreDB() {}
 
 bool HighScoreDB::initialize() {
     sqlite3* db;
