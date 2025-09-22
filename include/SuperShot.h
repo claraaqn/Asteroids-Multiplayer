@@ -1,27 +1,29 @@
-#pragma once
-#include <SFML/Graphics.hpp>
-#include <vector>
-#include "Bullet.h"
+#ifndef SUPERSHOT_H
+#define SUPERSHOT_H
+
 #include "Spaceship.h"
+#include "Bullet.h"
 #include "GameConstants.h"
 
 class SuperShot {
 private:
     static constexpr int COST = 500; // Pontos necessários por supertiro
-    static constexpr float COOLDOWN = 0.5f; // Cooldown em segundos
     int availableShots;
     sf::Clock cooldownClock;
+    static constexpr float COOLDOWN = 2.0f; // Segundos entre supertiros
     
 public:
     SuperShot();
+    
+    static int getCost() { return COST; } // Método estático
     
     bool canFire() const;
     bool hasShotsAvailable() const;
     void addShot();
     void addShotsBasedOnScore(int score);
     int getAvailableShots() const;
-    int getCost() const;
-    
     void fire(Spaceship& player, std::vector<Bullet>& bullets, int& playerScore);
     void reset();
 };
+
+#endif

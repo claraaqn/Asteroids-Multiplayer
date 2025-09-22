@@ -22,12 +22,12 @@ private:
     
 public:
     HighScoreDB();
-    ~HighScoreDB();
+    virtual ~HighScoreDB() = default; // Destructor virtual
     
-    bool initialize();
-    bool addHighScore(const std::string& playerName, int score, GameMode mode);
-    std::vector<HighScore> getTopScores(int limit = 5);
-    void clearAllScores();
+    virtual bool initialize();
+    virtual bool addHighScore(const std::string& playerName, int score, GameMode mode);
+    virtual std::vector<HighScore> getTopScores(int limit = 5);
+    virtual void clearAllScores(); // Se necessário
 };
 
 #endif
