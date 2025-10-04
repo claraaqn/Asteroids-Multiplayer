@@ -49,6 +49,6 @@ TEST_CASE("Game Flow Integration", "[Integration]") {
         nameScreen.handleEvent(event);
         
         REQUIRE_FALSE(nameScreen.isActive());
-        REQUIRE(nameScreen.getPlayerName() == "Test");
+        REQUIRE(nameScreen.getPlayer1Name() == "Test");
     }
 }

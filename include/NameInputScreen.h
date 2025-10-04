@@ -6,7 +6,12 @@ class NameInputScreen {
 private:
     sf::RenderWindow& window;
     sf::Font& font;
-    std::string playerName;
+
+    std::string player1Name;
+    std::string player2Name;
+
+    int currentPlayer;
+
     sf::Text titleText;
     sf::Text inputText;
     sf::Text promptText;
@@ -19,7 +24,9 @@ public:
     void activate();
     void deactivate();
     bool isActive() const;
-    std::string getPlayerName() const;
+
+    std::string getPlayer1Name() const;
+    std::string getPlayer2Name() const;
     
     void handleEvent(sf::Event& event);
     void draw();

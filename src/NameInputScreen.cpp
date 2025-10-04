@@ -2,7 +2,7 @@
 #include <iostream>
 
 NameInputScreen::NameInputScreen(sf::RenderWindow& window, sf::Font& font) 
-    : window(window), font(font), playerName(""), m_isActive(false) {
+    : window(window), font(font), currentPlayer(1), m_isActive(false) {
     
     titleText.setFont(font);
     titleText.setString("ENTER YOUR NAME");
@@ -11,13 +11,13 @@ NameInputScreen::NameInputScreen(sf::RenderWindow& window, sf::Font& font)
     titleText.setPosition(window.getSize().x / 2 - titleText.getLocalBounds().width / 2, 100);
     
     promptText.setFont(font);
-    promptText.setString("Type your name and press ENTER:");
+    promptText.setString("Player 1, type your name and press ENTER:");
     promptText.setCharacterSize(30);
     promptText.setFillColor(sf::Color::White);
     promptText.setPosition(window.getSize().x / 2 - promptText.getLocalBounds().width / 2, 180);
     
     startText.setFont(font);
-    startText.setString("Press ENTER to start or Button A on controller");
+    startText.setString("Press ENTER to confirm or Button A on controller");
     startText.setCharacterSize(25);
     startText.setFillColor(sf::Color::Yellow);
     startText.setPosition(window.getSize().x / 2 - startText.getLocalBounds().width / 2, 350);
@@ -29,7 +29,9 @@ NameInputScreen::NameInputScreen(sf::RenderWindow& window, sf::Font& font)
 
 void NameInputScreen::activate() {
     m_isActive = true;
-    playerName = "";
+    player1Name = "";
+    player2Name = "";
+    currentPlayer = 1;
     inputText.setString("_");
     inputText.setPosition(window.getSize().x / 2 - 10, 250);
 }
@@ -42,35 +44,53 @@ bool NameInputScreen::isActive() const {
     return m_isActive;
 }
 
-std::string NameInputScreen::getPlayerName() const {
-    return playerName;
+std::string NameInputScreen::getPlayer1Name() const {
+    return player1Name;
+}
+
+std::string NameInputScreen::getPlayer2Name() const {
+    return player2Name;
 }
 
 void NameInputScreen::handleEvent(sf::Event& event) {
     if (!isActive()) return;
-    
+
+    std::string& currentName = (currentPlayer == 1 ? player1Name : player2Name);
+
     if (event.type == sf::Event::TextEntered) {
         if (event.text.unicode == '\b') { // Backspace
-            if (!playerName.empty()) {
-                playerName.pop_back();
+            if (!currentName.empty()) {
+                currentName.pop_back();
             }
         } else if (event.text.unicode == '\r') { // Enter
-            if (!playerName.empty()) {
-                deactivate();
+            if (!currentName.empty()) {
+                if (currentPlayer == 1) {
+                    // Passa para Player 2
+                    currentPlayer = 2;
+                    promptText.setString("Player 2, type your name and press ENTER:");
+                    currentName = ""; // limpa para o próximo jogador
+                } else {
+                    // Ambos confirmaram -> fecha
+                    deactivate();
+                }
             }
-        } else if (event.text.unicode < 128 && playerName.length() < 15) {
-            playerName += static_cast<char>(event.text.unicode);
+        } else if (event.text.unicode < 128 && currentName.length() < 15) {
+            currentName += static_cast<char>(event.text.unicode);
         }
         
-        // Atualiza o texto de entrada
-        inputText.setString(playerName + "_");
+        inputText.setString(currentName + "_");
         inputText.setPosition(window.getSize().x / 2 - inputText.getLocalBounds().width / 2, 250);
     }
-    // Controle - Botão A (0) para confirmar
     else if (event.type == sf::Event::JoystickButtonPressed && 
              event.joystickButton.button == 0) {
-        if (!playerName.empty()) {
-            deactivate();
+        if (!currentName.empty()) {
+            if (currentPlayer == 1) {
+                currentPlayer = 2;
+                promptText.setString("Player 2, type your name and press A:");
+                currentName = "";
+            } else {
+                deactivate();
+            }
         }
     }
 }
