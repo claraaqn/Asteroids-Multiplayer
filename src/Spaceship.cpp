@@ -14,11 +14,9 @@ Spaceship::Spaceship(sf::Vector2f startPos, float startAngle, bool player1) {
    
 
     // Carrega a textura apropriada para cada jogador
-    if (isPlayer1) {
-        if (!spaceshipSpritesheet.loadFromFile("assets/imgs/Nave_estados.png")) {
-            std::cerr << "Erro ao carregar textura da nave do jogador 1!" << std::endl;
-            exit(1);
-        }
+     if (!spaceshipSpritesheet.loadFromFile("assets/imgs/Nave_estados.png")) {
+        std::cerr << "Erro ao carregar textura da nave!" << std::endl;
+        exit(1);
     }
 
     // 3. Define as dimensões dos frames e a lógica da spritesheet
@@ -70,7 +68,6 @@ void Spaceship::setAccelerating(bool accelerating) {
 }
 
 void Spaceship::draw(sf::RenderWindow& window) {
-    std::cout << "2. [DRAW] Dentro de Spaceship::draw(). Valor de isAccelerating: " << isAccelerating << "\n";
     // Primeiro, desenha a própria nave
     window.draw(sprite);
 

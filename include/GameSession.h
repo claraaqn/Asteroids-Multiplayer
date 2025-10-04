@@ -52,6 +52,8 @@ private:
     NameInputScreen nameInputScreen;
     bool nameEntered;
     std::string currentPlayerName;
+    std::string player1Name;
+    std::string player2Name;
     HighScoreDB highScoreDB;
 
     // Entidades do Jogo

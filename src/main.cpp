@@ -77,6 +77,10 @@ int main() {
 
     //? 5. TELA DE ENTRADA DO NOME (após selecionar o modo)
     NameInputScreen nameInputScreen(window, font);
+
+    std::string player1Name;
+    std::string player2Name;
+
     if (selectedMode == GameMode::SinglePlayer || selectedMode == GameMode::Multiplayer) {
         nameInputScreen.activate();
         
@@ -90,10 +94,18 @@ int main() {
                 nameInputScreen.handleEvent(event);
             }
             
+            // Saiu da tela → pega os nomes
             if (!nameInputScreen.isActive()) {
-                playerName = nameInputScreen.getPlayerName();
-                if (playerName.empty()) {
-                    playerName = "Player";
+                if (selectedMode == GameMode::SinglePlayer) {
+                    player1Name = nameInputScreen.getPlayer1Name();
+                    if (player1Name.empty()) player1Name = "Player";
+                } 
+                else if (selectedMode == GameMode::Multiplayer) {
+                    player1Name = nameInputScreen.getPlayer1Name();
+                    player2Name = nameInputScreen.getPlayer2Name();
+
+                    if (player1Name.empty()) player1Name = "Player 1";
+                    if (player2Name.empty()) player2Name = "Player 2";
                 }
                 break;
             }
