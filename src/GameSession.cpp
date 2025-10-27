@@ -319,7 +319,7 @@ void GameSession::processPlayerInput(float deltaTime) {
         }
 
         player1.decelerate();
-        player1.update(deltaTime);
+        player1.update(deltaTime, gameMode == GameMode::SinglePlayer);
     }
 
     //! --- Controles do Jogador 2 (apenas no multiplayer) ---
@@ -412,7 +412,7 @@ void GameSession::processPlayerInput(float deltaTime) {
         }
 
         player2.decelerate();
-        player2.update(deltaTime);
+        player2.update(deltaTime, false);
     }
 }
 
@@ -545,8 +545,8 @@ void GameSession::checkCollisions() {
 
 void GameSession::updateGameObjects(float deltaTime) {
     starfield.update(deltaTime);
-    if (player1.isAlive) player1.update(deltaTime);
-    if (player2.isAlive && gameMode == GameMode::Multiplayer) player2.update(deltaTime);
+    if (player1.isAlive) player1.update(deltaTime, gameMode == GameMode::SinglePlayer);
+    if (player2.isAlive && gameMode == GameMode::Multiplayer) player2.update(deltaTime, false);
 
     for (auto& bullet : bullets1) bullet.update(deltaTime);
     for (auto& bullet : bullets2) bullet.update(deltaTime);

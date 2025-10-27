@@ -11,6 +11,7 @@ Spaceship::Spaceship(sf::Vector2f startPos, float startAngle, bool player1) {
     isPlayer1 = player1;
     isAccelerating = false;
     fireCooldown.restart();
+    gameMode = GameMode::SinglePlayer;
    
 
     // Carrega a textura apropriada para cada jogador
@@ -72,7 +73,7 @@ void Spaceship::draw(sf::RenderWindow& window) {
 
 }
 
-void Spaceship::update(float deltaTime) {
+void Spaceship::update(float deltaTime,  bool isSingleplayer) {
     if (!isAlive) return;
 
     // --- LÓGICA DE ANIMAÇÃO CENTRALIZADA ---
@@ -128,24 +129,38 @@ void Spaceship::update(float deltaTime) {
 
     //TODO: movimentação da nave no multiplayer
     if (isPlayer1) {
-        // Jogador 1: sempre pode usar a tela inteira
-        if (position.x < halfSpriteWidth + margin) {
-            position.x = halfSpriteWidth + margin;
-            velocity.x = 0;
-        }
-        if (position.x > WIDTH - halfSpriteWidth - margin) {
-            position.x = WIDTH - halfSpriteWidth  - margin;
-            velocity.x = 0;
+        // Jogador 1
+        if (isSingleplayer) {
+            // Singleplayer - tela inteira
+            if (position.x < halfSpriteWidth + margin) {
+                position.x = halfSpriteWidth + margin;
+                velocity.x = 0;
+            }
+            if (position.x > WIDTH - halfSpriteWidth - margin) {
+                position.x = WIDTH - halfSpriteWidth - margin;
+                velocity.x = 0;
+            }
+        } else {
+            // Multiplayer - metade ESQUERDA (de 0 até WIDTH/2)
+            if (position.x < halfSpriteWidth + margin) {
+                position.x = halfSpriteWidth + margin;
+                velocity.x = 0;
+            }
+            if (position.x > (WIDTH/2) - halfSpriteWidth - margin) {
+                position.x = (WIDTH/2) - halfSpriteWidth - margin;
+                velocity.x = 0;
+            }
         }
     } 
-    // Jogador 2 (só deve existir no multiplayer)
+    // Jogador 2 (só existe no multiplayer)
     else {
+        // Multiplayer - metade DIREITA (de WIDTH/2 até WIDTH)
         if (position.x < (WIDTH/2) + halfSpriteWidth + margin) {
             position.x = (WIDTH/2) + halfSpriteWidth + margin;
             velocity.x = 0;
         }
-        if (position.x > WIDTH - halfSpriteWidth  - margin) {
-            position.x = WIDTH - halfSpriteWidth  - margin;
+        if (position.x > WIDTH - halfSpriteWidth - margin) {
+            position.x = WIDTH - halfSpriteWidth - margin;
             velocity.x = 0;
         }
     }
