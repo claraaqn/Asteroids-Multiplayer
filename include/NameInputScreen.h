@@ -1,11 +1,13 @@
 #pragma once
 #include <SFML/Graphics.hpp>
 #include <string>
+#include "GameMode.h"
 
 class NameInputScreen {
 private:
     sf::RenderWindow& window;
     sf::Font& font;
+    GameMode gameMode;
 
     std::string player1Name;
     std::string player2Name;
@@ -21,7 +23,7 @@ private:
 public:
     NameInputScreen(sf::RenderWindow& window, sf::Font& font);
     
-    void activate();
+    void activate(GameMode mode);
     void deactivate();
     bool isActive() const;
 

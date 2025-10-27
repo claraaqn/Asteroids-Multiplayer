@@ -27,11 +27,20 @@ NameInputScreen::NameInputScreen(sf::RenderWindow& window, sf::Font& font)
     inputText.setFillColor(sf::Color::Yellow);
 }
 
-void NameInputScreen::activate() {
+void NameInputScreen::activate(GameMode mode) {
     m_isActive = true;
     player1Name = "";
     player2Name = "";
     currentPlayer = 1;
+
+    gameMode = mode;
+
+    if (gameMode == GameMode::SinglePlayer) {
+        promptText.setString("Type your name and press ENTER:");
+    } else if(gameMode == GameMode::Multiplayer) {
+        promptText.setString("Player 1, type your name and press ENTER:");
+    }
+
     inputText.setString("_");
     inputText.setPosition(window.getSize().x / 2 - 10, 250);
 }
@@ -58,19 +67,17 @@ void NameInputScreen::handleEvent(sf::Event& event) {
     std::string& currentName = (currentPlayer == 1 ? player1Name : player2Name);
 
     if (event.type == sf::Event::TextEntered) {
-        if (event.text.unicode == '\b') { // Backspace
+        if (event.text.unicode == '\b') {
             if (!currentName.empty()) {
                 currentName.pop_back();
             }
-        } else if (event.text.unicode == '\r') { // Enter
+        } else if (event.text.unicode == '\r') {
             if (!currentName.empty()) {
-                if (currentPlayer == 1) {
-                    // Passa para Player 2
+                if (gameMode == GameMode::Multiplayer && currentPlayer == 1) {
                     currentPlayer = 2;
                     promptText.setString("Player 2, type your name and press ENTER:");
-                    currentName = ""; // limpa para o próximo jogador
+                    currentName = "";
                 } else {
-                    // Ambos confirmaram -> fecha
                     deactivate();
                 }
             }

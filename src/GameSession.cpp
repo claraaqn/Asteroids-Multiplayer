@@ -30,82 +30,67 @@ GameSession::GameSession(sf::RenderWindow& window, sf::Font& font, GameMode mode
     if (!shootBuffer.loadFromFile("assets/sound/laser1.wav")) exit(1);
     if (!explosionBuffer.loadFromFile("assets/sound/explosion.wav")) exit(1);
 
-
-    // Configura o divisor (só para modo multiplayer)
-    divider.setSize(sf::Vector2f(2, HEIGHT));
-    divider.setFillColor(sf::Color::White);
-    divider.setPosition(WIDTH / 2.0f, 0);
-
     // Configura textos de score
-    scoreText1.setFont(font);
-    scoreText1.setCharacterSize(30);
-    scoreText1.setFillColor(sf::Color::Green);
-    scoreText1.setPosition(10, 10);
-
-    scoreText2.setFont(font);
-    scoreText2.setCharacterSize(20);
-    scoreText2.setFillColor(sf::Color::Cyan);
-    scoreText2.setPosition(WIDTH - 100, 10);
-
-    //! Configura textos de supertiro
-    superShotText1.setFont(font);
-    superShotText1.setCharacterSize(20);
-    superShotText1.setFillColor(sf::Color::Yellow);
-    superShotText1.setPosition(10, 40);
-
-    superShotText2.setFont(font);
-    superShotText2.setCharacterSize(20);
-    superShotText2.setFillColor(sf::Color::Yellow);
-    superShotText2.setPosition(WIDTH - 150, 40);
-    
-    // Se for Single Player, "desativa" o jogador 2
     if (gameMode == GameMode::SinglePlayer) {
+        //! desativa o player 2
         player2.isAlive = false;
+
+        //! pontos
+        scoreText1.setFont(font);
+        scoreText1.setCharacterSize(30);
+        scoreText1.setFillColor(sf::Color::Green);
+        scoreText1.setPosition(10, 10);
+
+        //! Configura textos de supertiro
+        superShotText1.setFont(font);
+        superShotText1.setCharacterSize(20);
+        superShotText1.setFillColor(sf::Color::Yellow);
+        superShotText1.setPosition(10, 40);
+    } else if (gameMode == GameMode::Multiplayer) {
+        scoreText1.setFont(font);
+        scoreText1.setCharacterSize(30);
+        scoreText1.setFillColor(sf::Color::Green);
+        scoreText1.setPosition(10, 10);
+
+        scoreText2.setFont(font);
+        scoreText2.setCharacterSize(30);
+        scoreText2.setFillColor(sf::Color::Cyan);
+        scoreText2.setPosition(WIDTH - 100, 10);
+
+        //! Configura textos de supertiro
+        superShotText1.setFont(font);
+        superShotText1.setCharacterSize(20);
+        superShotText1.setFillColor(sf::Color::Yellow);
+        superShotText1.setPosition(10, 40);
+
+        superShotText2.setFont(font);
+        superShotText2.setCharacterSize(20);
+        superShotText2.setFillColor(sf::Color::Yellow);
+        superShotText2.setPosition(WIDTH - 100, 40);
+
+        //! configurações de divisão de tela
+        divider.setSize(sf::Vector2f(2, HEIGHT));
+        divider.setFillColor(sf::Color::White);
+        divider.setPosition(WIDTH / 2.0f, 0);
     }
 
     resetGame();
 }
 
-void GameSession::setPlayerName(const std::string& name) {
-    currentPlayerName = name;
-    nameEntered = true; // Marca que o nome já foi inserido
+void GameSession::setPlayerName(const std::string& p1Name, const std::string& p2Name) {
+    player1Name = p1Name;
+    player2Name = p2Name;
+    nameEntered = true;
 }
 
 void GameSession::run() {
     sf::Clock clock;
-    
-    // Só pede o nome se não tiver sido definido
-    if (!nameEntered) {
-        nameInputScreen.activate();
-    }
+
     
     while (window.isOpen()) {
         float deltaTime = clock.restart().asSeconds();
 
         handleEvents();
-
-        // Fase de entrada do nome (só se não tiver nome ainda)
-        if (!nameEntered && nameInputScreen.isActive()) {
-            window.clear(sf::Color::Black);
-            nameInputScreen.draw();
-            window.display();
-            continue;
-        }
-        else if (!nameEntered) {
-            if (gameMode == GameMode::SinglePlayer) {
-                currentPlayerName = nameInputScreen.getPlayer1Name();
-                if (currentPlayerName.empty()) currentPlayerName = "Player";
-            }
-            else if (gameMode == GameMode::Multiplayer) {
-                player1Name = nameInputScreen.getPlayer1Name();
-                player2Name = nameInputScreen.getPlayer2Name();
-
-                if (player1Name.empty()) player1Name = "Player 1";
-                if (player2Name.empty()) player2Name = "Player 2";
-            }
-
-            nameEntered = true;
-        }
 
         if (gameState.isGameOver()) {
             gameOverScreen.draw(window);
@@ -120,10 +105,10 @@ void GameSession::run() {
 
 void GameSession::gameOver(int finalScore) {
     if (gameMode == GameMode::SinglePlayer) {
-        highScoreDB.addHighScore(currentPlayerName, score1, gameMode);
+        highScoreDB.addHighScore(player1Name, score1, gameMode);
     } else {
-        highScoreDB.addHighScore(currentPlayerName + " (P1)", score1, gameMode);
-        highScoreDB.addHighScore(currentPlayerName + " (P2)", score2, gameMode);
+        highScoreDB.addHighScore(player1Name + " (P1)", score1, gameMode);
+        highScoreDB.addHighScore(player2Name + " (P2)", score2, gameMode);
     }
     
     gameOverScreen.refreshHighScores(gameMode);
@@ -257,7 +242,6 @@ void GameSession::processPlayerInput(float deltaTime) {
         }
 
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up) || sf::Keyboard::isKeyPressed(sf::Keyboard::Down)) {
-           std::cout<< "tecla cima ou baixo clicado" << std::endl;
                 player1.setAccelerating(true);
 
         } else {

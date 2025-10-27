@@ -5,7 +5,7 @@
 #include "Menu.h"
 #include "GameSession.h"
 #include "GameConstants.h"
-#include "NameInputScreen.h"  // Adicione esta linha
+#include "NameInputScreen.h"
 
 using namespace GameConstants;
 
@@ -35,7 +35,6 @@ int main() {
     }
     gameView.setViewport(sf::FloatRect(0, 0, 1, 1));
 
-    // 3. View para a INTERFACE/HUD (fixa no tamanho da tela)
     sf::View hudView;
     hudView.setSize(desktop.width, desktop.height);
     hudView.setCenter(desktop.width / 2.0f, desktop.height / 2.0f);
@@ -75,14 +74,13 @@ int main() {
         }
     }
 
-    //? 5. TELA DE ENTRADA DO NOME (após selecionar o modo)
     NameInputScreen nameInputScreen(window, font);
 
     std::string player1Name;
     std::string player2Name;
 
     if (selectedMode == GameMode::SinglePlayer || selectedMode == GameMode::Multiplayer) {
-        nameInputScreen.activate();
+        nameInputScreen.activate(selectedMode);
         
         while (window.isOpen() && nameInputScreen.isActive()) {
             sf::Event event;
@@ -116,7 +114,6 @@ int main() {
         }
     }
 
-    //? 6. Execução do Jogo
     try {
         if (selectedMode == GameMode::SinglePlayer || selectedMode == GameMode::Multiplayer) {
             std::cout << "Iniciando jogo no modo: " 
@@ -126,8 +123,11 @@ int main() {
             window.setView(gameView);
             GameSession gameSession(window, font, selectedMode, gameView, hudView);
             
-            // Passa o nome do jogador para a GameSession
-            gameSession.setPlayerName(playerName);
+            if (selectedMode == GameMode::SinglePlayer) {
+                gameSession.setPlayerName(player1Name);
+            } else {
+                gameSession.setPlayerName(player1Name, player2Name);
+            }
             
             std::cout << "GameSession criada, executando run()..." << std::endl;
             gameSession.run();
