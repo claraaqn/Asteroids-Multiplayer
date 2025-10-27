@@ -121,43 +121,42 @@ void Spaceship::update(float deltaTime) {
     
     // Obtém as dimensões reais da sprite
     sf::FloatRect globalBounds = sprite.getGlobalBounds();
-    float spriteWidth = globalBounds.width;
-    float spriteHeight = globalBounds.height;
+    float halfSpriteWidth = (globalBounds.width / 2.0f) * 0.6f;
+    float halfSpriteHeight = (globalBounds.height / 2.0f) * 0.2f;
     
-    const float margin = 5.0f;
+    const float margin = 2.0f;
 
-    // MODIFICAÇÃO: Jogador 1 pode se mover pela tela inteira
-    // Jogador 2 (se existir) fica restrito à metade direita
+    //TODO: movimentação da nave no multiplayer
     if (isPlayer1) {
         // Jogador 1: sempre pode usar a tela inteira
-        if (position.x < spriteWidth/2 + margin) {
-            position.x = spriteWidth/2 + margin;
+        if (position.x < halfSpriteWidth + margin) {
+            position.x = halfSpriteWidth + margin;
             velocity.x = 0;
         }
-        if (position.x > WIDTH - spriteWidth/2 - margin) {
-            position.x = WIDTH - spriteWidth/2 - margin;
+        if (position.x > WIDTH - halfSpriteWidth - margin) {
+            position.x = WIDTH - halfSpriteWidth  - margin;
             velocity.x = 0;
         }
     } 
     // Jogador 2 (só deve existir no multiplayer)
     else {
-        if (position.x < WIDTH/2 + spriteWidth/2 + margin) {
-            position.x = WIDTH/2 + spriteWidth/2 + margin;
+        if (position.x < (WIDTH/2) + halfSpriteWidth + margin) {
+            position.x = (WIDTH/2) + halfSpriteWidth + margin;
             velocity.x = 0;
         }
-        if (position.x > WIDTH - spriteWidth/2 - margin) {
-            position.x = WIDTH - spriteWidth/2 - margin;
+        if (position.x > WIDTH - halfSpriteWidth  - margin) {
+            position.x = WIDTH - halfSpriteWidth  - margin;
             velocity.x = 0;
         }
     }
 
     // Limites verticais
-    if (position.y < spriteHeight/2 + margin) {
-        position.y = spriteHeight/2 + margin;
+    if (position.y < halfSpriteHeight + margin) {
+        position.y = halfSpriteHeight + margin;
         velocity.y = 0;
     }
-    if (position.y > HEIGHT - spriteHeight/2 - margin) {
-        position.y = HEIGHT - spriteHeight/2 - margin;
+    if (position.y > HEIGHT - halfSpriteHeight - margin) {
+        position.y = HEIGHT - halfSpriteHeight - margin;
         velocity.y = 0;
     }
 
