@@ -24,6 +24,7 @@ public:
     bool canFire() const;
     void resetFireCooldown();
     void reset(sf::Vector2f newPosition, float newAngle, bool player);
+    float getCollisionRadius() const;
 
 private:
     static constexpr float FIRE_COOLDOWN = 300.0f;

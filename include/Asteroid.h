@@ -26,4 +26,5 @@ public:
     float getRadius() const;
     int getSize() const ;
     sf::FloatRect getBounds() const;  
+    float getCollisionRadius() const;
 };

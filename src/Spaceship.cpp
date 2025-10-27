@@ -46,9 +46,6 @@ Spaceship::Spaceship(sf::Vector2f startPos, float startAngle, bool player1) {
 
 }
 
-
-// Em src/Spaceship.cpp
-
 void Spaceship::setAccelerating(bool accelerating) {
     // Se o estado não mudou, não faz nada. Isso é crucial!
     if (isAccelerating == accelerating) {
@@ -170,11 +167,11 @@ void Spaceship::update(float deltaTime) {
 
 void Spaceship::accelerate(float amount) {
     // Conversão de ângulo para vetor de aceleração
-float rad = (sprite.getRotation() - 90.0f) * PI / 180.0f;
-    sf::Vector2f acceleration(
-        amount * 0.5f * std::cos(rad),
-        amount * 0.5f * std::sin(rad)
-    );
+    float rad = (sprite.getRotation() - 90.0f) * PI / 180.0f;
+        sf::Vector2f acceleration(
+            amount * 0.5f * std::cos(rad),
+            amount * 0.5f * std::sin(rad)
+        );
     
     velocity += acceleration;
     
@@ -186,12 +183,12 @@ float rad = (sprite.getRotation() - 90.0f) * PI / 180.0f;
 }
 
 void Spaceship::decelerate() {
-velocity *= 0.98f;  // Desaceleração suave
+    velocity *= 0.98f;  // Desaceleração suave
 
-// Parada completa quando muito lento
-if (std::abs(velocity.x) < 0.01f && std::abs(velocity.y) < 0.01f) {
-    velocity = sf::Vector2f(0, 0);
-}
+    // Parada completa quando muito lento
+    if (std::abs(velocity.x) < 0.01f && std::abs(velocity.y) < 0.01f) {
+        velocity = sf::Vector2f(0, 0);
+    }
 }
 
 sf::Vector2f Spaceship::getFirePosition() const {
@@ -229,4 +226,9 @@ void Spaceship::reset(sf::Vector2f newPosition, float newAngle, bool player) {
 
 sf::FloatRect Spaceship::getBounds() const {
     return sprite.getGlobalBounds();
+}
+
+float Spaceship::getCollisionRadius() const {
+    sf::FloatRect bounds = sprite.getGlobalBounds();
+    return std::min(bounds.width, bounds.height) * 0.15f; 
 }

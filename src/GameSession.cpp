@@ -488,16 +488,40 @@ void GameSession::spawnAsteroids(float deltaTime) {
 void GameSession::checkCollisions() {
     for (size_t i = 0; i < asteroids.size(); ++i) {
         
-        // --- 1. Colisão Asteroide vs. Naves ---
-        if (player1.isAlive && player1.getBounds().intersects(asteroids[i].getBounds())) {
-            player1.isAlive = false;
+        // --- 1. Colisão Asteroide vs. Naves (usando círculos) ---
+        if (player1.isAlive) {
+            sf::Vector2f playerPos = player1.sprite.getPosition();
+            sf::Vector2f asteroidPos = asteroids[i].getPosition();
+            
+            float distance = std::sqrt(
+                std::pow(playerPos.x - asteroidPos.x, 2) + 
+                std::pow(playerPos.y - asteroidPos.y, 2)
+            );
+            
+            float collisionDistance = player1.getCollisionRadius() + asteroids[i].getCollisionRadius();
+            
+            if (distance < collisionDistance) {
+                player1.isAlive = false;
+            }
         }
         
-        if (gameMode == GameMode::Multiplayer && player2.isAlive && player2.getBounds().intersects(asteroids[i].getBounds())) {
-            player2.isAlive = false;
+        if (gameMode == GameMode::Multiplayer && player2.isAlive) {
+            sf::Vector2f playerPos = player2.sprite.getPosition();
+            sf::Vector2f asteroidPos = asteroids[i].getPosition();
+            
+            float distance = std::sqrt(
+                std::pow(playerPos.x - asteroidPos.x, 2) + 
+                std::pow(playerPos.y - asteroidPos.y, 2)
+            );
+            
+            float collisionDistance = player2.getCollisionRadius() + asteroids[i].getCollisionRadius();
+            
+            if (distance < collisionDistance) {
+                player2.isAlive = false;
+            }
         }
 
-        // --- 2. Colisão Asteroide vs. Balas ---
+        // --- 2. Colisão Asteroide vs. Balas (mantém retângulo para ser mais permissivo) ---
         // Balas do Jogador 1
         for (auto& bullet : bullets1) {
             if (bullet.isActive && bullet.getBounds().intersects(asteroids[i].getBounds())) {
