@@ -127,7 +127,6 @@ void Spaceship::update(float deltaTime,  bool isSingleplayer) {
     
     const float margin = 2.0f;
 
-    //TODO: movimentação da nave no multiplayer
     if (isPlayer1) {
         // Jogador 1
         if (isSingleplayer) {

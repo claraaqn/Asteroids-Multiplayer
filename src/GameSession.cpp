@@ -417,14 +417,14 @@ void GameSession::processPlayerInput(float deltaTime) {
 }
 
 void GameSession::spawnAsteroids(float deltaTime) {
-    const float BASE_SPAWN_INTERVAL   = 1.5f;
-    const float MIN_SPAWN_INTERVAL    = 0.3f;
-    const float SPAWN_ACCELERATION    = 0.003f;
+    const float BASE_SPAWN_INTERVAL   = 1.5f; //! talvez possa diminuir
+    const float MIN_SPAWN_INTERVAL    = 0.3f; //! talvez possa deminuir
+    const float SPAWN_ACCELERATION    = 0.003f; //! talvez possa aumentar
     const int   BASE_ASTEROIDS_SPAWN  = 1;
-    const int   MAX_ASTEROIDS_SPAWN   = 4;
+    const int   MAX_ASTEROIDS_SPAWN   = 4; //! talvez possa aumentar
     const float BASE_ASTEROID_SPEED   = 50.0f;
     const float MAX_ASTEROID_SPEED    = 300.0f;
-    const float SPEED_INCREASE_RATE   = 0.3f;
+    const float SPEED_INCREASE_RATE   = 0.3f; //! talvez possa almentar
 
     // Calcula o intervalo de spawn
     float currentSpawnInterval = std::max(
@@ -447,27 +447,44 @@ void GameSession::spawnAsteroids(float deltaTime) {
         );
 
         // Spawna todos os asteroides calculados, independente de quantos já existem
+        //TODO: talvez precide melhorar
         for (int i = 0; i < asteroidsToSpawn; i++) {
             float x, y, vx, vy;
             
             if (gameMode == GameMode::Multiplayer) {
                 // Multiplayer
-                x = spawnOnLeft 
-                    ? (rand() % (WIDTH / 3)) 
-                    : (WIDTH * 2 / 3 + rand() % (WIDTH / 3));
-                vx = (rand() % 100) / 100.0f - 0.5f;
-            } else {
-                // Singleplayer
-                x = rand() % WIDTH;
-                
-                if (x < WIDTH / 2) {
-                    // Se nasceu na metade esquerda, move para a direita
-                    vx = (rand() % 100) / 100.0f; // 0.0 a 1.0
+                if (spawnOnLeft) {
+                    x = rand() % WIDTH; 
+                    vx = -((rand() % 70) / 100.0f + 0.3f); 
                 } else {
-                    // Se nasceu na metade direita, move para a esquerda
-                    vx = -((rand() % 100) / 100.0f); // -1.0 a 0.0
+                    x = rand() % WIDTH;
+                    vx = (rand() % 70) / 100.0f + 0.3f; 
+                }
+            } else {
+                // Singleplayer 
+                x = rand() % WIDTH;  
+                
+                float randomDirection = (rand() % 100) / 100.0f; 
+                
+                if (randomDirection < 0.4f) {
+                    // 40% chance: movimento suave para o centro
+                    if (x < WIDTH / 2) {
+                        vx = (rand() % 60) / 100.0f + 0.2f; 
+                    } else {
+                        vx = -((rand() % 60) / 100.0f + 0.2f); 
+                    }
+                } else if (randomDirection < 0.7f) {
+                    // 30% chance: movimento quase vertical
+                    vx = (rand() % 40) / 100.0f - 0.2f; 
+                } else {
+                    // 30% chance: movimento diagonal acentuado
+                    if (x < WIDTH / 2) {
+                        vx = (rand() % 80) / 100.0f + 0.5f; 
+                    } else {
+                        vx = -((rand() % 80) / 100.0f + 0.5f); 
                 }
             }
+            
             
             y = -50.0f - (i * 30.0f);
             vy = currentSpeed * (0.8f + (rand() % 40) / 100.0f);
@@ -475,6 +492,7 @@ void GameSession::spawnAsteroids(float deltaTime) {
             int size = (rand() % 2) + 2; // Tamanho 2 ou 3
             
             asteroids.emplace_back(sf::Vector2f(x, y), sf::Vector2f(vx, vy), size);
+        
         }
         
         if (gameMode == GameMode::Multiplayer) {
@@ -483,6 +501,7 @@ void GameSession::spawnAsteroids(float deltaTime) {
         
         asteroidSpawnClock.restart();
     }
+}
 }
 
 void GameSession::checkCollisions() {
