@@ -1,5 +1,6 @@
 #pragma once
 #include <SFML/Graphics.hpp>
+#include "GameMode.h"
 #include "GameConstants.h"
 
 class Spaceship {
@@ -15,7 +16,8 @@ public:
     sf::FloatRect getBounds() const;
 
     Spaceship(sf::Vector2f startPos, float startAngle, bool player1);
-    void update(float deltaTime);
+#include "GameConstants.h"
+    void update(float deltaTime, bool isSingleplayer);
     void accelerate(float amount);
     void setAccelerating(bool accelerating);
     void draw(sf::RenderWindow& window);
@@ -24,12 +26,16 @@ public:
     bool canFire() const;
     void resetFireCooldown();
     void reset(sf::Vector2f newPosition, float newAngle, bool player);
+    float getCollisionRadius() const;
 
 private:
     static constexpr float FIRE_COOLDOWN = 300.0f;
     sf::Clock fireCooldown;
     sf::Texture spaceshipSpritesheet;
     bool isAccelerating;
+
+    GameMode gameMode;
+
     // --- VARIÁVEIS PARA ANIMAÇÃO ---
     float animationTimer;
     float animationSpeed;    // Tempo para cada frame (e.g., 0.1s)
