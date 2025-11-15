@@ -11,13 +11,24 @@ Spaceship::Spaceship(sf::Vector2f startPos, float startAngle, bool player1) {
     isPlayer1 = player1;
     isAccelerating = false;
     fireCooldown.restart();
+    gameMode = GameMode::SinglePlayer;
    
 
     // Carrega a textura apropriada para cada jogador
-    if (isPlayer1) {
+     if (isPlayer1) {
+        // Player 1 - nave original
         if (!spaceshipSpritesheet.loadFromFile("assets/imgs/Nave_estados.png")) {
-            std::cerr << "Erro ao carregar textura da nave do jogador 1!" << std::endl;
+            std::cerr << "Erro ao carregar textura da nave do player 1!" << std::endl;
             exit(1);
+        }
+    } else {
+        // Player 2 - nova sprite
+        if (!spaceshipSpritesheet.loadFromFile("assets/imgs/Nave2_estados.png")) {
+            std::cerr << "Erro ao carregar textura da nave do player 2!" << std::endl;
+            // Fallback para a textura do player 1 se a do player 2 não existir
+            if (!spaceshipSpritesheet.loadFromFile("assets/imgs/Nave_estados.png")) {
+                exit(1);
+            }
         }
     }
 
@@ -48,9 +59,6 @@ Spaceship::Spaceship(sf::Vector2f startPos, float startAngle, bool player1) {
 
 }
 
-
-// Em src/Spaceship.cpp
-
 void Spaceship::setAccelerating(bool accelerating) {
     // Se o estado não mudou, não faz nada. Isso é crucial!
     if (isAccelerating == accelerating) {
@@ -70,7 +78,6 @@ void Spaceship::setAccelerating(bool accelerating) {
 }
 
 void Spaceship::draw(sf::RenderWindow& window) {
-    std::cout << "2. [DRAW] Dentro de Spaceship::draw(). Valor de isAccelerating: " << isAccelerating << "\n";
     // Primeiro, desenha a própria nave
     window.draw(sprite);
 
@@ -78,7 +85,7 @@ void Spaceship::draw(sf::RenderWindow& window) {
 
 }
 
-void Spaceship::update(float deltaTime) {
+void Spaceship::update(float deltaTime,  bool isSingleplayer) {
     if (!isAlive) return;
 
     // --- LÓGICA DE ANIMAÇÃO CENTRALIZADA ---
@@ -127,43 +134,55 @@ void Spaceship::update(float deltaTime) {
     
     // Obtém as dimensões reais da sprite
     sf::FloatRect globalBounds = sprite.getGlobalBounds();
-    float spriteWidth = globalBounds.width;
-    float spriteHeight = globalBounds.height;
+    float halfSpriteWidth = (globalBounds.width / 2.0f) * 0.6f;
+    float halfSpriteHeight = (globalBounds.height / 2.0f) * 0.2f;
     
-    const float margin = 5.0f;
+    const float margin = 2.0f;
 
-    // MODIFICAÇÃO: Jogador 1 pode se mover pela tela inteira
-    // Jogador 2 (se existir) fica restrito à metade direita
     if (isPlayer1) {
-        // Jogador 1: sempre pode usar a tela inteira
-        if (position.x < spriteWidth/2 + margin) {
-            position.x = spriteWidth/2 + margin;
-            velocity.x = 0;
-        }
-        if (position.x > WIDTH - spriteWidth/2 - margin) {
-            position.x = WIDTH - spriteWidth/2 - margin;
-            velocity.x = 0;
+        // Jogador 1
+        if (isSingleplayer) {
+            // Singleplayer - tela inteira
+            if (position.x < halfSpriteWidth + margin) {
+                position.x = halfSpriteWidth + margin;
+                velocity.x = 0;
+            }
+            if (position.x > WIDTH - halfSpriteWidth - margin) {
+                position.x = WIDTH - halfSpriteWidth - margin;
+                velocity.x = 0;
+            }
+        } else {
+            // Multiplayer - metade ESQUERDA (de 0 até WIDTH/2)
+            if (position.x < halfSpriteWidth + margin) {
+                position.x = halfSpriteWidth + margin;
+                velocity.x = 0;
+            }
+            if (position.x > (WIDTH/2) - halfSpriteWidth - margin) {
+                position.x = (WIDTH/2) - halfSpriteWidth - margin;
+                velocity.x = 0;
+            }
         }
     } 
-    // Jogador 2 (só deve existir no multiplayer)
+    // Jogador 2 (só existe no multiplayer)
     else {
-        if (position.x < WIDTH/2 + spriteWidth/2 + margin) {
-            position.x = WIDTH/2 + spriteWidth/2 + margin;
+        // Multiplayer - metade DIREITA (de WIDTH/2 até WIDTH)
+        if (position.x < (WIDTH/2) + halfSpriteWidth + margin) {
+            position.x = (WIDTH/2) + halfSpriteWidth + margin;
             velocity.x = 0;
         }
-        if (position.x > WIDTH - spriteWidth/2 - margin) {
-            position.x = WIDTH - spriteWidth/2 - margin;
+        if (position.x > WIDTH - halfSpriteWidth - margin) {
+            position.x = WIDTH - halfSpriteWidth - margin;
             velocity.x = 0;
         }
     }
 
     // Limites verticais
-    if (position.y < spriteHeight/2 + margin) {
-        position.y = spriteHeight/2 + margin;
+    if (position.y < halfSpriteHeight + margin) {
+        position.y = halfSpriteHeight + margin;
         velocity.y = 0;
     }
-    if (position.y > HEIGHT - spriteHeight/2 - margin) {
-        position.y = HEIGHT - spriteHeight/2 - margin;
+    if (position.y > HEIGHT - halfSpriteHeight - margin) {
+        position.y = HEIGHT - halfSpriteHeight - margin;
         velocity.y = 0;
     }
 
@@ -173,11 +192,11 @@ void Spaceship::update(float deltaTime) {
 
 void Spaceship::accelerate(float amount) {
     // Conversão de ângulo para vetor de aceleração
-float rad = (sprite.getRotation() - 90.0f) * PI / 180.0f;
-    sf::Vector2f acceleration(
-        amount * 0.5f * std::cos(rad),
-        amount * 0.5f * std::sin(rad)
-    );
+    float rad = (sprite.getRotation() - 90.0f) * PI / 180.0f;
+        sf::Vector2f acceleration(
+            amount * 0.5f * std::cos(rad),
+            amount * 0.5f * std::sin(rad)
+        );
     
     velocity += acceleration;
     
@@ -189,12 +208,12 @@ float rad = (sprite.getRotation() - 90.0f) * PI / 180.0f;
 }
 
 void Spaceship::decelerate() {
-velocity *= 0.98f;  // Desaceleração suave
+    velocity *= 0.98f;  // Desaceleração suave
 
-// Parada completa quando muito lento
-if (std::abs(velocity.x) < 0.01f && std::abs(velocity.y) < 0.01f) {
-    velocity = sf::Vector2f(0, 0);
-}
+    // Parada completa quando muito lento
+    if (std::abs(velocity.x) < 0.01f && std::abs(velocity.y) < 0.01f) {
+        velocity = sf::Vector2f(0, 0);
+    }
 }
 
 sf::Vector2f Spaceship::getFirePosition() const {
@@ -232,4 +251,9 @@ void Spaceship::reset(sf::Vector2f newPosition, float newAngle, bool player) {
 
 sf::FloatRect Spaceship::getBounds() const {
     return sprite.getGlobalBounds();
+}
+
+float Spaceship::getCollisionRadius() const {
+    sf::FloatRect bounds = sprite.getGlobalBounds();
+    return std::min(bounds.width, bounds.height) * 0.15f; 
 }
