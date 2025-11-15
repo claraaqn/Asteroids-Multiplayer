@@ -82,3 +82,8 @@ int Asteroid::getSize() const {
 sf::FloatRect Asteroid::getBounds() const {
     return sprite.getGlobalBounds();
 }
+
+float Asteroid::getCollisionRadius() const {
+    sf::FloatRect bounds = sprite.getGlobalBounds();
+    return std::min(bounds.width, bounds.height) * 0.25f; 
+}

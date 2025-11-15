@@ -9,16 +9,20 @@
 #include "Asteroid.h"
 #include "Starfield.h"
 #include "AsteroidExplosion.h"
-#include "Menu.h" // Para o GameMode
+#include "Menu.h" 
 #include "GameOverScreen.h"
 #include "Game.h" 
 #include "SuperShot.h" 
+#include "NameInputScreen.h"
+#include "GameMode.h"
+#include "HighScoreDB.h" 
 
 class GameSession {
 public:
     // O construtor recebe o modo de jogo para saber se cria 1 ou 2 jogadores
     GameSession(sf::RenderWindow& window, sf::Font& font, GameMode mode, const sf::View& gameView, const sf::View& hudView);
-    void run(); 
+    void setPlayerName(const std::string& player1Name, const std::string& player2Name = "");
+    void run();
 
 private:
     // Métodos de lógica interna
@@ -34,18 +38,26 @@ private:
     void checkCollisions();
     void updateGameObjects(float deltaTime);
     void destroyAsteroid(size_t index, int& playerScore);
+    void gameOver(int finalScore);
 
     // Variáveis do Jogo
     sf::RenderWindow& window;
     sf::Font& font;
     GameMode gameMode;
-    sf::View gameView; // Armazena a view do jogo
+    sf::View gameView; 
+    Game gameState; 
     sf::View hudView;
-    Game gameState; // Gerencia o estado de game over
-     // Relógio para controlar o tempo entre spawns
-    bool spawnOnLeft;
+    
+    // variáveis da tabela
+    NameInputScreen nameInputScreen;
+    bool nameEntered;
+    std::string currentPlayerName;
+    std::string player1Name;
+    std::string player2Name;
+    HighScoreDB highScoreDB;
 
     // Entidades do Jogo
+    bool spawnOnLeft;
     Spaceship player1;
     Spaceship player2;
     std::vector<Bullet> bullets1;

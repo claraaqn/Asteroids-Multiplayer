@@ -8,56 +8,85 @@ using namespace GameConstants;
 
 // O construtor inicializa TUDO que era criado no main
 GameSession::GameSession(sf::RenderWindow& window, sf::Font& font, GameMode mode, const sf::View& gameView, const sf::View& hudView)
-    : window(window), font(font), gameMode(mode), gameView(gameView), hudView(hudView),
+    : window(window), 
+      font(font), 
+      gameMode(mode), 
+      gameView(gameView), 
+      hudView(hudView), // hudView primeiro
+      nameInputScreen(window, font),
+      nameEntered(false),
+      currentPlayerName(""),
+      highScoreDB(),
       spawnOnLeft(true),
       player1(sf::Vector2f(WIDTH / 4, HEIGHT - 40), 0, true),
       player2(sf::Vector2f(3 * WIDTH / 4, HEIGHT - 40), 0, false),
       starfield(200, WIDTH, HEIGHT),
-      score1(0), score2(0), gameTime(0.0f), gameOverScreen(font)
+      score1(0), score2(0), gameTime(0.0f),
+      gameOverScreen(font, highScoreDB)
 {
+
+    highScoreDB.initialize();
     // Carrega sons
     if (!shootBuffer.loadFromFile("assets/sound/laser1.wav")) exit(1);
     if (!explosionBuffer.loadFromFile("assets/sound/explosion.wav")) exit(1);
 
-
-    // Configura o divisor (só para modo multiplayer)
-    divider.setSize(sf::Vector2f(2, HEIGHT));
-    divider.setFillColor(sf::Color::White);
-    divider.setPosition(WIDTH / 2.0f, 0);
-
     // Configura textos de score
-    scoreText1.setFont(font);
-    scoreText1.setCharacterSize(30);
-    scoreText1.setFillColor(sf::Color::Green);
-    scoreText1.setPosition(10, 10);
-
-    scoreText2.setFont(font);
-    scoreText2.setCharacterSize(20);
-    scoreText2.setFillColor(sf::Color::Cyan);
-    scoreText2.setPosition(WIDTH - 100, 10);
-
-    //! Configura textos de supertiro
-    superShotText1.setFont(font);
-    superShotText1.setCharacterSize(20);
-    superShotText1.setFillColor(sf::Color::Yellow);
-    superShotText1.setPosition(10, 40);
-
-    superShotText2.setFont(font);
-    superShotText2.setCharacterSize(20);
-    superShotText2.setFillColor(sf::Color::Yellow);
-    superShotText2.setPosition(WIDTH - 150, 40);
-    
-    // Se for Single Player, "desativa" o jogador 2
     if (gameMode == GameMode::SinglePlayer) {
+        //! desativa o player 2
         player2.isAlive = false;
+
+        //! pontos
+        scoreText1.setFont(font);
+        scoreText1.setCharacterSize(30);
+        scoreText1.setFillColor(sf::Color::Green);
+        scoreText1.setPosition(10, 10);
+
+        //! Configura textos de supertiro
+        superShotText1.setFont(font);
+        superShotText1.setCharacterSize(20);
+        superShotText1.setFillColor(sf::Color::Yellow);
+        superShotText1.setPosition(10, 40);
+    } else if (gameMode == GameMode::Multiplayer) {
+        scoreText1.setFont(font);
+        scoreText1.setCharacterSize(30);
+        scoreText1.setFillColor(sf::Color::Green);
+        scoreText1.setPosition(10, 10);
+
+        scoreText2.setFont(font);
+        scoreText2.setCharacterSize(30);
+        scoreText2.setFillColor(sf::Color::Cyan);
+        scoreText2.setPosition(WIDTH - 100, 10);
+
+        //! Configura textos de supertiro
+        superShotText1.setFont(font);
+        superShotText1.setCharacterSize(20);
+        superShotText1.setFillColor(sf::Color::Yellow);
+        superShotText1.setPosition(10, 40);
+
+        superShotText2.setFont(font);
+        superShotText2.setCharacterSize(20);
+        superShotText2.setFillColor(sf::Color::Yellow);
+        superShotText2.setPosition(WIDTH - 100, 40);
+
+        //! configurações de divisão de tela
+        divider.setSize(sf::Vector2f(2, HEIGHT));
+        divider.setFillColor(sf::Color::White);
+        divider.setPosition(WIDTH / 2.0f, 0);
     }
 
     resetGame();
 }
 
-// GameSession.cpp
+void GameSession::setPlayerName(const std::string& p1Name, const std::string& p2Name) {
+    player1Name = p1Name;
+    player2Name = p2Name;
+    nameEntered = true;
+}
+
 void GameSession::run() {
     sf::Clock clock;
+
+    
     while (window.isOpen()) {
         float deltaTime = clock.restart().asSeconds();
 
@@ -74,11 +103,28 @@ void GameSession::run() {
     }
 }
 
+void GameSession::gameOver(int finalScore) {
+    if (gameMode == GameMode::SinglePlayer) {
+        highScoreDB.addHighScore(player1Name, score1, gameMode);
+    } else {
+        highScoreDB.addHighScore(player1Name + " (P1)", score1, gameMode);
+        highScoreDB.addHighScore(player2Name + " (P2)", score2, gameMode);
+    }
+    
+    gameOverScreen.refreshHighScores(gameMode);
+}
+
 void GameSession::handleEvents() {
-    sf::Event event; // APENAS UMA DECLARAÇÃO
+    sf::Event event;
     while (window.pollEvent(event)) {
         if (event.type == sf::Event::Closed) {
             window.close();
+        }
+        
+        // Se estiver na tela de entrada de nome, processa eventos lá
+        if (nameInputScreen.isActive()) {
+            nameInputScreen.handleEvent(event);
+            continue;
         }
         
         if (gameState.isGameOver()) {
@@ -102,13 +148,29 @@ void GameSession::update(float deltaTime) {
     checkCollisions();
 
     // VERIFIQUE SE O JOGO DEVE TERMINAR APENAS SE OS JOGADORES ESTIVEREM MORTOs
-    if (!player1.isAlive && (gameMode == GameMode::SinglePlayer || !player2.isAlive)) {
-        gameState.checkGameOver(player1.isAlive, player2.isAlive, score1, score2);
-        if(gameState.isGameOver()){
-            gameOverScreen.update(gameState.getWinner(), score1, score2);
-            gameOverScreen.setPosition(WIDTH/2, HEIGHT/2);
+    // Multiplayer: termina quando qualquer um morrer
+    if (gameMode == GameMode::Multiplayer) {
+        if (!player1.isAlive || !player2.isAlive) {
+            gameState.checkGameOver(player1.isAlive, player2.isAlive, score1, score2);
+            if (gameState.isGameOver()) {
+                gameOverScreen.update(gameState.getWinner(), score1, score2, gameMode);
+                gameOverScreen.setPosition(WIDTH/2, HEIGHT/2);
+                int finalScore = (gameState.getWinner() == 1) ? score1 : score2;
+                gameOver(finalScore);
+            }
+        }
+    } else { 
+        // Singleplayer
+        if (!player1.isAlive) {
+            gameState.checkGameOver(player1.isAlive, false, score1, score2);
+            if (gameState.isGameOver()) {
+                gameOverScreen.update(gameState.getWinner(), score1, score2, gameMode);
+                gameOverScreen.setPosition(WIDTH/2, HEIGHT/2);
+                gameOver(score1);
+            }
         }
     }
+
 
     //! Atualiza supertiros disponíveis
     superShot1.addShotsBasedOnScore(score1);
@@ -154,9 +216,9 @@ void GameSession::resetGame() {
 
     asteroids.clear();
     bullets1.clear();
+    bullets2.clear(); 
     asteroidExplosions.clear();
 }
-
 
 void GameSession::processPlayerInput(float deltaTime) {
     //! --- Controles do Jogador 1 ---
@@ -180,7 +242,6 @@ void GameSession::processPlayerInput(float deltaTime) {
         }
 
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up) || sf::Keyboard::isKeyPressed(sf::Keyboard::Down)) {
-           std::cout<< "tecla cima ou baixo clicado" << std::endl;
                 player1.setAccelerating(true);
 
         } else {
@@ -258,19 +319,112 @@ void GameSession::processPlayerInput(float deltaTime) {
         }
 
         player1.decelerate();
-        player1.update(deltaTime);
+        player1.update(deltaTime, gameMode == GameMode::SinglePlayer);
+    }
+
+    //! --- Controles do Jogador 2 (apenas no multiplayer) ---
+    if (gameMode == GameMode::Multiplayer && player2.isAlive) {
+        //? CONTROLES DE TECLADO (WASD) - ROTAÇÃO E ACELERAÇÃO
+        float keyboardX = 0.0f;
+        float keyboardY = 0.0f;
+        
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) {
+            keyboardX = -1.0f;
+        }
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) {
+            keyboardX = 1.0f;
+        }
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::W)) {
+            keyboardY = -1.0f;
+            player2.setAccelerating(true);
+        }
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) {
+            keyboardY = 1.0f;
+        }
+
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::W) || sf::Keyboard::isKeyPressed(sf::Keyboard::S)) {
+            player2.setAccelerating(true);
+        } else {
+            player2.setAccelerating(false);
+        }
+        
+        // Se estiver usando teclado, prioriza sobre joystick
+        if (keyboardX != 0.0f || keyboardY != 0.0f) {
+            float normX = keyboardX * 0.4f;
+            float normY = keyboardY * 0.4f;
+            
+            float radAngle = player2.angle * (3.14159265f / 180.0f);
+            
+            float forwardForce = normY * cos(radAngle) - normX * sin(radAngle);
+            float lateralForce = normY * sin(radAngle) + normX * cos(radAngle);
+            
+            player2.velocity.x += forwardForce * 0.25f;
+            player2.velocity.y += -forwardForce * 0.25f; 
+            player2.velocity.x += lateralForce * 0.25f;
+            player2.velocity.y += lateralForce * 0.25f;
+        }
+        else {
+            //? CONTROLES DE JOYSTICK - MOVIMENTO DIRECIONAL (Jogador 2 - Joystick 1)
+            float joystickX = sf::Joystick::getAxisPosition(1, sf::Joystick::X);
+            float joystickY = sf::Joystick::getAxisPosition(1, sf::Joystick::Y);
+            
+            if (std::abs(joystickX) > 25.0f || std::abs(joystickY) > 25.0f) {
+                float normX = (joystickX / 100.0f) * 0.4f;
+                float normY = (-joystickY / 100.0f) * 0.4f;
+                
+                float radAngle = player2.angle * (3.14159265f / 180.0f);
+                
+                float forwardForce = normY * cos(radAngle) - normX * sin(radAngle);
+                float lateralForce = normY * sin(radAngle) + normX * cos(radAngle);
+                
+                player2.velocity.x += forwardForce * 0.25f;
+                player2.velocity.y += -forwardForce * 0.25f; 
+                player2.velocity.x += lateralForce * 0.25f;
+                player2.velocity.y += lateralForce * 0.25f;
+            }
+        }
+
+        // TIRO COM TECLADO (Jogador 2 - Barra de Espaço)
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space) && player2.canFire()) {
+            bullets2.emplace_back().fire(player2.getFirePosition(), player2.angle);
+            player2.resetFireCooldown();
+            
+            activeSounds.emplace_back(shootBuffer);
+            activeSounds.back().setVolume(70);
+            activeSounds.back().play();
+        }
+        //! SUPERTIRO COM TECLADO (Jogador 2 - Ctrl)
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::RControl)) {
+            superShot2.fire(player2, bullets2, score2);
+        }
+        // TIRO COM JOYSTICK (Jogador 2 - Botão A)
+        if (sf::Joystick::isButtonPressed(1, 0) && player2.canFire()) {
+            bullets2.emplace_back().fire(player2.getFirePosition(), player2.angle);
+            player2.resetFireCooldown();
+            
+            activeSounds.emplace_back(shootBuffer);
+            activeSounds.back().setVolume(70);
+            activeSounds.back().play();
+        }
+        //! SUPERTIRO COM JOYSTICK (Jogador 2 - Botão B)
+        if (sf::Joystick::isButtonPressed(1, 1)) {
+            superShot2.fire(player2, bullets2, score2);
+        }
+
+        player2.decelerate();
+        player2.update(deltaTime, false);
     }
 }
 
 void GameSession::spawnAsteroids(float deltaTime) {
-    const float BASE_SPAWN_INTERVAL   = 1.5f;
-    const float MIN_SPAWN_INTERVAL    = 0.3f;
-    const float SPAWN_ACCELERATION    = 0.003f;
+    const float BASE_SPAWN_INTERVAL   = 1.5f; //! talvez possa diminuir
+    const float MIN_SPAWN_INTERVAL    = 0.3f; //! talvez possa deminuir
+    const float SPAWN_ACCELERATION    = 0.003f; //! talvez possa aumentar
     const int   BASE_ASTEROIDS_SPAWN  = 1;
-    const int   MAX_ASTEROIDS_SPAWN   = 4;
+    const int   MAX_ASTEROIDS_SPAWN   = 4; //! talvez possa aumentar
     const float BASE_ASTEROID_SPEED   = 50.0f;
     const float MAX_ASTEROID_SPEED    = 300.0f;
-    const float SPEED_INCREASE_RATE   = 0.3f;
+    const float SPEED_INCREASE_RATE   = 0.3f; //! talvez possa almentar
 
     // Calcula o intervalo de spawn
     float currentSpawnInterval = std::max(
@@ -293,27 +447,44 @@ void GameSession::spawnAsteroids(float deltaTime) {
         );
 
         // Spawna todos os asteroides calculados, independente de quantos já existem
+        //TODO: talvez precide melhorar
         for (int i = 0; i < asteroidsToSpawn; i++) {
             float x, y, vx, vy;
             
             if (gameMode == GameMode::Multiplayer) {
                 // Multiplayer
-                x = spawnOnLeft 
-                    ? (rand() % (WIDTH / 3)) 
-                    : (WIDTH * 2 / 3 + rand() % (WIDTH / 3));
-                vx = (rand() % 100) / 100.0f - 0.5f;
-            } else {
-                // Singleplayer
-                x = rand() % WIDTH;
-                
-                if (x < WIDTH / 2) {
-                    // Se nasceu na metade esquerda, move para a direita
-                    vx = (rand() % 100) / 100.0f; // 0.0 a 1.0
+                if (spawnOnLeft) {
+                    x = rand() % WIDTH; 
+                    vx = -((rand() % 70) / 100.0f + 0.3f); 
                 } else {
-                    // Se nasceu na metade direita, move para a esquerda
-                    vx = -((rand() % 100) / 100.0f); // -1.0 a 0.0
+                    x = rand() % WIDTH;
+                    vx = (rand() % 70) / 100.0f + 0.3f; 
+                }
+            } else {
+                // Singleplayer 
+                x = rand() % WIDTH;  
+                
+                float randomDirection = (rand() % 100) / 100.0f; 
+                
+                if (randomDirection < 0.4f) {
+                    // 40% chance: movimento suave para o centro
+                    if (x < WIDTH / 2) {
+                        vx = (rand() % 60) / 100.0f + 0.2f; 
+                    } else {
+                        vx = -((rand() % 60) / 100.0f + 0.2f); 
+                    }
+                } else if (randomDirection < 0.7f) {
+                    // 30% chance: movimento quase vertical
+                    vx = (rand() % 40) / 100.0f - 0.2f; 
+                } else {
+                    // 30% chance: movimento diagonal acentuado
+                    if (x < WIDTH / 2) {
+                        vx = (rand() % 80) / 100.0f + 0.5f; 
+                    } else {
+                        vx = -((rand() % 80) / 100.0f + 0.5f); 
                 }
             }
+            
             
             y = -50.0f - (i * 30.0f);
             vy = currentSpeed * (0.8f + (rand() % 40) / 100.0f);
@@ -321,6 +492,7 @@ void GameSession::spawnAsteroids(float deltaTime) {
             int size = (rand() % 2) + 2; // Tamanho 2 ou 3
             
             asteroids.emplace_back(sf::Vector2f(x, y), sf::Vector2f(vx, vy), size);
+        
         }
         
         if (gameMode == GameMode::Multiplayer) {
@@ -330,42 +502,78 @@ void GameSession::spawnAsteroids(float deltaTime) {
         asteroidSpawnClock.restart();
     }
 }
-
-// GameSession.cpp
+}
 
 void GameSession::checkCollisions() {
-    // Usamos um laço 'for' com índice porque vamos modificar o vetor 'asteroids'
     for (size_t i = 0; i < asteroids.size(); ++i) {
         
-        // --- 1. Colisão Asteroide vs. Naves ---
-        if (player1.isAlive && player1.getBounds().intersects(asteroids[i].getBounds())) {
-            player1.isAlive = false; // "Mata" o jogador 1
-            // TODO: Tocar som de morte do jogador
+        // --- 1. Colisão Asteroide vs. Naves (usando círculos) ---
+        if (player1.isAlive) {
+            sf::Vector2f playerPos = player1.sprite.getPosition();
+            sf::Vector2f asteroidPos = asteroids[i].getPosition();
+            
+            float distance = std::sqrt(
+                std::pow(playerPos.x - asteroidPos.x, 2) + 
+                std::pow(playerPos.y - asteroidPos.y, 2)
+            );
+            
+            float collisionDistance = player1.getCollisionRadius() + asteroids[i].getCollisionRadius();
+            
+            if (distance < collisionDistance) {
+                player1.isAlive = false;
+            }
+        }
+        
+        if (gameMode == GameMode::Multiplayer && player2.isAlive) {
+            sf::Vector2f playerPos = player2.sprite.getPosition();
+            sf::Vector2f asteroidPos = asteroids[i].getPosition();
+            
+            float distance = std::sqrt(
+                std::pow(playerPos.x - asteroidPos.x, 2) + 
+                std::pow(playerPos.y - asteroidPos.y, 2)
+            );
+            
+            float collisionDistance = player2.getCollisionRadius() + asteroids[i].getCollisionRadius();
+            
+            if (distance < collisionDistance) {
+                player2.isAlive = false;
+            }
         }
 
-        // --- 2. Colisão Asteroide vs. Balas ---
+        // --- 2. Colisão Asteroide vs. Balas (mantém retângulo para ser mais permissivo) ---
         // Balas do Jogador 1
         for (auto& bullet : bullets1) {
             if (bullet.isActive && bullet.getBounds().intersects(asteroids[i].getBounds())) {
                 bullet.isActive = false;
-                destroyAsteroid(i, score1); // Chama nossa função auxiliar!
-                goto next_asteroid; // Pula para o próximo asteroide, pois este foi destruído
+                destroyAsteroid(i, score1);
+                goto next_asteroid;
+            }
+        }
+        
+        // Balas do Jogador 2
+        for (auto& bullet : bullets2) {
+            if (bullet.isActive && bullet.getBounds().intersects(asteroids[i].getBounds())) {
+                bullet.isActive = false;
+                destroyAsteroid(i, score2);
+                goto next_asteroid;
             }
         }
     }
-    next_asteroid:; // Rótulo para o goto
+    next_asteroid:;
 }
 
 void GameSession::updateGameObjects(float deltaTime) {
     starfield.update(deltaTime);
-    if (player1.isAlive) player1.update(deltaTime);
+    if (player1.isAlive) player1.update(deltaTime, gameMode == GameMode::SinglePlayer);
+    if (player2.isAlive && gameMode == GameMode::Multiplayer) player2.update(deltaTime, false);
 
     for (auto& bullet : bullets1) bullet.update(deltaTime);
+    for (auto& bullet : bullets2) bullet.update(deltaTime);
     for (auto& asteroid : asteroids) asteroid.update(deltaTime, gameTime);
     for (auto& explosion : asteroidExplosions) explosion.timer += deltaTime;
 
-    // Limpeza de objetos inativos (balas, explosões)
     bullets1.erase(std::remove_if(bullets1.begin(), bullets1.end(), [](const Bullet& b){ return !b.isActive; }), bullets1.end());
+    bullets2.erase(std::remove_if(bullets2.begin(), bullets2.end(), [](const Bullet& b){ return !b.isActive; }), bullets2.end());
     asteroidExplosions.erase(std::remove_if(asteroidExplosions.begin(), asteroidExplosions.end(), [](const AsteroidExplosion& e){ return e.timer >= 0.3f; }), asteroidExplosions.end());
 }
 
@@ -398,34 +606,44 @@ void GameSession::destroyAsteroid(size_t index, int& playerScore) {
     }
 }
 
-// Desenha tudo que pertence ao mundo do jogo
 void GameSession::renderGame() {
-    window.setView(gameView); // <-- USA A VIEW DO JOGO
+    window.setView(gameView);
 
     starfield.draw(window);
     if (gameMode == GameMode::Multiplayer) {
         window.draw(divider);
     }
     for (const auto& asteroid : asteroids) asteroid.draw(window);
+    
+    // Balas do jogador 1
     for (const auto& bullet : bullets1) if (bullet.isActive) window.draw(bullet.shape);
+    
+    // Balas do jogador 2
+    for (const auto& bullet : bullets2) if (bullet.isActive) window.draw(bullet.shape);
 
-    if (player1.isAlive){
+    // Jogador 1
+    if (player1.isAlive) {
         window.draw(player1.sprite);
         player1.draw(window);
     }
 
-
+    // Jogador 2 (apenas no multiplayer)
+    if (gameMode == GameMode::Multiplayer && player2.isAlive) {
+        window.draw(player2.sprite);
+        player2.draw(window);
+    }
 }
 
-// Desenha tudo que pertence à interface
 void GameSession::renderHud() {
-    window.setView(hudView); // <-- USA A VIEW DA HUD
+    window.setView(hudView); 
 
     window.draw(scoreText1);
+    window.draw(scoreText2);
+    window.draw(superShotText1);
+    window.draw(superShotText2);
 
     // Se o jogo acabou, a tela de GameOver também é parte da HUD
     if (gameState.isGameOver()) {
-        gameOverScreen.setPosition(WIDTH/2, HEIGHT/2); // Centraliza na tela
         gameOverScreen.draw(window);
     }
 }

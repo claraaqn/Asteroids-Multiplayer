@@ -28,9 +28,6 @@ int SuperShot::getAvailableShots() const {
     return availableShots;
 }
 
-int SuperShot::getCost() const {
-    return COST;
-}
 
 void SuperShot::fire(Spaceship& player, std::vector<Bullet>& bullets, int& playerScore) {
     if (!canFire() || !hasShotsAvailable() || playerScore < COST) {
