@@ -14,10 +14,21 @@ Spaceship::Spaceship(sf::Vector2f startPos, float startAngle, bool player1) {
     gameMode = GameMode::SinglePlayer;
    
 
-    // Carrega a textura apropriada para cada jogador
-     if (!spaceshipSpritesheet.loadFromFile("assets/imgs/Nave_estados.png")) {
-        std::cerr << "Erro ao carregar textura da nave!" << std::endl;
-        exit(1);
+    if (isPlayer1) {
+        // Player 1 - nave original
+        if (!spaceshipSpritesheet.loadFromFile("assets/imgs/Nave_estados.png")) {
+            std::cerr << "Erro ao carregar textura da nave do player 1!" << std::endl;
+            exit(1);
+        }
+    } else {
+        // Player 2 - nova sprite
+        if (!spaceshipSpritesheet.loadFromFile("assets/imgs/Nave2_estados.png")) {
+            std::cerr << "Erro ao carregar textura da nave do player 2!" << std::endl;
+            // Fallback para a textura do player 1 se a do player 2 não existir
+            if (!spaceshipSpritesheet.loadFromFile("assets/imgs/Nave_estados.png")) {
+                exit(1);
+            }
+        }
     }
 
     // 3. Define as dimensões dos frames e a lógica da spritesheet
