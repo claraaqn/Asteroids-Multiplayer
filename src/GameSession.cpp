@@ -226,7 +226,8 @@ void GameSession::processPlayerInput(float deltaTime) {
         //? CONTROLES DE TECLADO (SETINHAS) - ROTAÇÃO E ACELERAÇÃO
         float keyboardX = 0.0f;
         float keyboardY = 0.0f;
-        
+        bool keyboardAccelerating = false;
+
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) {
             keyboardX = -1.0f;
         }
@@ -235,67 +236,72 @@ void GameSession::processPlayerInput(float deltaTime) {
         }
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up)) {
             keyboardY = -1.0f;
-            player1.setAccelerating(true);
+            keyboardAccelerating = true;
         }
-       if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down)) {
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down)) {
             keyboardY = 1.0f;
         }
 
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up) || sf::Keyboard::isKeyPressed(sf::Keyboard::Down)) {
-                player1.setAccelerating(true);
+        //? CONTROLES DE JOYSTICK - MOVIMENTO DIRECIONAL
+        float joystickX = sf::Joystick::getAxisPosition(0, sf::Joystick::X);
+        float joystickY = sf::Joystick::getAxisPosition(0, sf::Joystick::Y);
+        bool joystickAccelerating = false;
 
+        // CORREÇÃO: Detectar aceleração do joystick (eixo Y para frente/trás)
+        if (std::abs(joystickY) > 25.0f) {
+            // Se está movendo para frente (eixo Y negativo) ou para trás
+            joystickAccelerating = true;
+        }
+
+        // PRIORIDADE: Teclado sobre joystick
+        bool usingKeyboard = (keyboardX != 0.0f || keyboardY != 0.0f);
+        bool usingJoystick = (!usingKeyboard && (std::abs(joystickX) > 25.0f || std::abs(joystickY) > 25.0f));
+
+        // ATUALIZA ESTADO DE ACELERAÇÃO (IMPORTANTE!)
+        if (usingKeyboard) {
+            player1.setAccelerating(keyboardAccelerating);
+        } else if (usingJoystick) {
+            player1.setAccelerating(joystickAccelerating);
         } else {
+            // Nenhum input detectado - para de acelerar
             player1.setAccelerating(false);
         }
-        
-        // Se estiver usando teclado, prioriza sobre joystick
-        if (keyboardX != 0.0f || keyboardY != 0.0f) {
+
+        // APLICA MOVIMENTO
+        if (usingKeyboard) {
             float normX = keyboardX * 0.4f;
             float normY = keyboardY * 0.4f;
-            
-            // Calcula a direção do movimento baseado no ângulo atual da nave
+
             float radAngle = player1.angle * (3.14159265f / 180.0f);
-            
-            // Movimento relativo à direção da nave (forward/backward + strafe)
+
             float forwardForce = normY * cos(radAngle) - normX * sin(radAngle);
             float lateralForce = normY * sin(radAngle) + normX * cos(radAngle);
-            
-            // Aplica as forças
+
             player1.velocity.x += forwardForce * 0.25f;
-            player1.velocity.y += -forwardForce * 0.25f; 
+            player1.velocity.y += -forwardForce * 0.25f;
             player1.velocity.x += lateralForce * 0.25f;
             player1.velocity.y += lateralForce * 0.25f;
         }
-        else {
-            //? CONTROLES DE JOYSTICK - MOVIMENTO DIRECIONAL
-            float joystickX = sf::Joystick::getAxisPosition(0, sf::Joystick::X);
-            float joystickY = sf::Joystick::getAxisPosition(0, sf::Joystick::Y);
-            
-            if (std::abs(joystickX) > 25.0f || std::abs(joystickY) > 25.0f) {
-                // Para joystick, não rotaciona automaticamente - usa movimento direcional
-                float normX = (joystickX / 100.0f) * 0.4f;
-                float normY = (-joystickY / 100.0f) * 0.4f;
-                
-                // Calcula a direção do movimento baseado no ângulo atual da nave
-                float radAngle = player1.angle * (3.14159265f / 180.0f);
-                
-                // Movimento relativo à direção da nave (forward/backward + strafe)
-                float forwardForce = normY * cos(radAngle) - normX * sin(radAngle);
-                float lateralForce = normY * sin(radAngle) + normX * cos(radAngle);
-                
-                // Aplica as forças
-                player1.velocity.x += forwardForce * 0.25f;
-                player1.velocity.y += -forwardForce * 0.25f; 
-                player1.velocity.x += lateralForce * 0.25f;
-                player1.velocity.y += lateralForce * 0.25f;
-            }
+        else if (usingJoystick) {
+            float normX = (joystickX / 100.0f) * 0.4f;
+            float normY = (-joystickY / 100.0f) * 0.4f;
+
+            float radAngle = player1.angle * (3.14159265f / 180.0f);
+
+            float forwardForce = normY * cos(radAngle) - normX * sin(radAngle);
+            float lateralForce = normY * sin(radAngle) + normX * cos(radAngle);
+
+            player1.velocity.x += forwardForce * 0.25f;
+            player1.velocity.y += -forwardForce * 0.25f;
+            player1.velocity.x += lateralForce * 0.25f;
+            player1.velocity.y += lateralForce * 0.25f;
         }
 
         // TIRO COM TECLADO (Barra de Espaço)
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Enter) && player1.canFire()) {
             bullets1.emplace_back().fire(player1.getFirePosition(), player1.angle);
             player1.resetFireCooldown();
-            
+
             activeSounds.emplace_back(shootBuffer);
             activeSounds.back().setVolume(70);
             activeSounds.back().play();
@@ -308,7 +314,7 @@ void GameSession::processPlayerInput(float deltaTime) {
         if (sf::Joystick::isButtonPressed(0, 0) && player1.canFire()) {
             bullets1.emplace_back().fire(player1.getFirePosition(), player1.angle);
             player1.resetFireCooldown();
-            
+
             activeSounds.emplace_back(shootBuffer);
             activeSounds.back().setVolume(70);
             activeSounds.back().play();
@@ -327,7 +333,8 @@ void GameSession::processPlayerInput(float deltaTime) {
         //? CONTROLES DE TECLADO (WASD) - ROTAÇÃO E ACELERAÇÃO
         float keyboardX = 0.0f;
         float keyboardY = 0.0f;
-        
+        bool keyboardAccelerating = false;
+
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) {
             keyboardX = -1.0f;
         }
@@ -336,52 +343,63 @@ void GameSession::processPlayerInput(float deltaTime) {
         }
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::W)) {
             keyboardY = -1.0f;
-            player2.setAccelerating(true);
+            keyboardAccelerating = true;
         }
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) {
             keyboardY = 1.0f;
         }
 
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::W) || sf::Keyboard::isKeyPressed(sf::Keyboard::S)) {
-            player2.setAccelerating(true);
+        //? CONTROLES DE JOYSTICK - MOVIMENTO DIRECIONAL (Jogador 2 - Joystick 1)
+        float joystickX = sf::Joystick::getAxisPosition(1, sf::Joystick::X);
+        float joystickY = sf::Joystick::getAxisPosition(1, sf::Joystick::Y);
+        bool joystickAccelerating = false;
+
+        // CORREÇÃO: Detectar aceleração do joystick
+        if (std::abs(joystickY) > 25.0f) {
+            joystickAccelerating = true;
+        }
+
+        // PRIORIDADE: Teclado sobre joystick
+        bool usingKeyboard = (keyboardX != 0.0f || keyboardY != 0.0f);
+        bool usingJoystick = (!usingKeyboard && (std::abs(joystickX) > 25.0f || std::abs(joystickY) > 25.0f));
+
+        // ATUALIZA ESTADO DE ACELERAÇÃO (IMPORTANTE!)
+        if (usingKeyboard) {
+            player2.setAccelerating(keyboardAccelerating);
+        } else if (usingJoystick) {
+            player2.setAccelerating(joystickAccelerating);
         } else {
             player2.setAccelerating(false);
         }
-        
-        // Se estiver usando teclado, prioriza sobre joystick
-        if (keyboardX != 0.0f || keyboardY != 0.0f) {
+
+        // APLICA MOVIMENTO
+        if (usingKeyboard) {
             float normX = keyboardX * 0.4f;
             float normY = keyboardY * 0.4f;
-            
+
             float radAngle = player2.angle * (3.14159265f / 180.0f);
-            
+
             float forwardForce = normY * cos(radAngle) - normX * sin(radAngle);
             float lateralForce = normY * sin(radAngle) + normX * cos(radAngle);
-            
+
             player2.velocity.x += forwardForce * 0.25f;
-            player2.velocity.y += -forwardForce * 0.25f; 
+            player2.velocity.y += -forwardForce * 0.25f;
             player2.velocity.x += lateralForce * 0.25f;
             player2.velocity.y += lateralForce * 0.25f;
         }
-        else {
-            //? CONTROLES DE JOYSTICK - MOVIMENTO DIRECIONAL (Jogador 2 - Joystick 1)
-            float joystickX = sf::Joystick::getAxisPosition(1, sf::Joystick::X);
-            float joystickY = sf::Joystick::getAxisPosition(1, sf::Joystick::Y);
-            
-            if (std::abs(joystickX) > 25.0f || std::abs(joystickY) > 25.0f) {
-                float normX = (joystickX / 100.0f) * 0.4f;
-                float normY = (-joystickY / 100.0f) * 0.4f;
-                
-                float radAngle = player2.angle * (3.14159265f / 180.0f);
-                
-                float forwardForce = normY * cos(radAngle) - normX * sin(radAngle);
-                float lateralForce = normY * sin(radAngle) + normX * cos(radAngle);
-                
-                player2.velocity.x += forwardForce * 0.25f;
-                player2.velocity.y += -forwardForce * 0.25f; 
-                player2.velocity.x += lateralForce * 0.25f;
-                player2.velocity.y += lateralForce * 0.25f;
-            }
+        else if (usingJoystick) {
+            float normX = (joystickX / 100.0f) * 0.4f;
+            float normY = (-joystickY / 100.0f) * 0.4f;
+
+            float radAngle = player2.angle * (3.14159265f / 180.0f);
+
+            float forwardForce = normY * cos(radAngle) - normX * sin(radAngle);
+            float lateralForce = normY * sin(radAngle) + normX * cos(radAngle);
+
+            player2.velocity.x += forwardForce * 0.25f;
+            player2.velocity.y += -forwardForce * 0.25f;
+            player2.velocity.x += lateralForce * 0.25f;
+            player2.velocity.y += lateralForce * 0.25f;
         }
 
         // TIRO COM TECLADO (Jogador 2 - Barra de Espaço)

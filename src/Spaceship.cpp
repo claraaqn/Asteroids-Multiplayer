@@ -124,9 +124,12 @@ void Spaceship::update(float deltaTime,  bool isSingleplayer) {
             sprite.setTextureRect(sf::IntRect(frameX, frameY, frameWidth, frameHeight));
         }
     } else {
-        // Se NÃO está acelerando, garante que a nave mostre o frame normal (canto superior esquerdo)
-        sprite.setTextureRect(sf::IntRect(0, 0, frameWidth, frameHeight));
-    }
+        if (currentFrame != 0) { // Só atualiza se não estiver já no frame normal
+            currentFrame = 0;
+            int row = isPlayer1 ? 0 : 1;
+            sprite.setTextureRect(sf::IntRect(0, row * frameHeight, frameWidth, frameHeight));
+        }
+}
 
     // Atualiza posição
     position += velocity;
